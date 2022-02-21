@@ -1,15 +1,23 @@
 # ChatMessage
 Chat Message Application during lab 3 of CPSC 313 at Gonzaga University, and expanded upon in further assignments.
 
-Dependancies:
+## Dependancies
+
 * pika
 * requests
 * pytest
 * fastapi
 * logging
 
+Quick install with
+
+```bash
+pip install -r requirements.txt
+```
+
 This uses the ChatMessageEnv virtual environment for development
 To Run
+
 ```bash
 ChatMessageEnv/Scripts/Activate.ps1
 ```
