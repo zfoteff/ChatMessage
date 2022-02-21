@@ -6,11 +6,6 @@ rmq = RMQMessageInteractions()
 app = FastAPI()
 chat_log = Logger("chat")
 chat_log("[-+-] Started chat app")
-    
-@app.on_event("shutdown")
-def shutdown_event():
-    rmq.close()
-    chat_log("[-X-] Shutdown chat app")
 
 @app.get("/")
 async def root():

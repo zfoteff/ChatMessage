@@ -1,7 +1,8 @@
 import pika
 from logger import Logger
 
-RMQ_HOST = "cps-devops.gonzaga.edu"
+RMQ_DEV_HOST = "localhost"
+RMQ_PROD_HOST = "cps-devops.gonzaga.edu"
 RMQ_PORT = 5672
 EXCHANGE_TYPE = "fanout"
 RMQ_USER = "class"
@@ -16,7 +17,7 @@ class RMQMessageInteractions:
     """
     Rabbit Message Queue interaction object
     """
-    def __init__(self, queue: str=RMQ_DEFAULT_PUBLIC_QUEUE):
+    def __init__(self, host=RMQ_PROD_HOST, queue: str=RMQ_DEFAULT_PUBLIC_QUEUE):
         """
         Instantiate manipulation object. Allows user to pass a queue to connect to. Will create
         a connection to the RMQ server that allows user to send and recieve messages
@@ -26,7 +27,7 @@ class RMQMessageInteractions:
             Defaults to RMQ_DEFAULT_PUBLIC_QUEUE.
         """
         self._creds = pika.PlainCredentials(RMQ_USER, RMQ_PASS)
-        self._params = pika.ConnectionParameters(RMQ_HOST, RMQ_PORT, "/", self._creds)
+        self._params = pika.ConnectionParameters(host, RMQ_PORT, "/", self._creds)
         self._queue = queue
         self._connection = pika.BlockingConnection(self._params)
         self._channel = self._connection.channel()

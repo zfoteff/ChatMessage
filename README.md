@@ -1,4 +1,5 @@
 # ChatMessage
+
 Chat Message Application during lab 3 of CPSC 313 at Gonzaga University, and expanded upon in further assignments.
 
 ## Dependancies
