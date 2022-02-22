@@ -1,5 +1,5 @@
 import pika
-from logger import Logger
+from bin.logger import Logger
 
 RMQ_DEV_HOST = "localhost"
 RMQ_PROD_HOST = "cps-devops.gonzaga.edu"

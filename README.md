@@ -10,10 +10,10 @@ Chat Message Application during lab 3 of CPSC 313 at Gonzaga University, and exp
 * fastapi
 * logging
 
-Quick install with
+Quick install dependancies with
 
 ```bash
-pip install -r requirements.txt
+pip install -r bin/requirements.txt
 ```
 
 This uses the ChatMessageEnv virtual environment for development

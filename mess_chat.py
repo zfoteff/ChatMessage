@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from rmq import RMQMessageInteractions
-from logger import Logger
+from bin.logger import Logger
 
 rmq = RMQMessageInteractions()
 app = FastAPI()

@@ -1,4 +1,4 @@
-from logger import Logger
+from bin.logger import Logger
 import requests as req
 import time
 

@@ -1,4 +1,4 @@
-from logger import Logger
+from bin.logger import Logger
 from rmq import RMQ_PRIVATE_QUEUE, RMQMessageInteractions as RMQ
 import time
 
