@@ -32,7 +32,7 @@ class RMQMessageInteractions:
         self._connection = pika.BlockingConnection(self._params)
         self._channel = self._connection.channel()
         self._channel.queue_declare(self._queue)
-        logger("[-+-] Connected to RMQ server")
+        logger(f"[-+-] Connected to RMQ server {host}")
             
     def close(self):
         """
