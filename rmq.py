@@ -2,7 +2,7 @@ import pika
 from bin.logger import Logger
 
 RMQ_DEV_HOST = "localhost"
-RMQ_PROD_HOST = "cps-devops.gonzaga.edu"
+RMQ_PROD_HOST = "35.236.51.203"
 RMQ_PORT = 5672
 EXCHANGE_TYPE = "fanout"
 RMQ_USER = "class"
