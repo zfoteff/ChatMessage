@@ -1,0 +1,145 @@
+CPSC 313: Distributed and Cloud Computing 
+
+Spring 2022 
+
+  
+
+Lab 4: Message based chat – MVP2 
+
+Now that we have begun our foray into distributed services using a messaging queue, we can start to make the distributed chat more realistic. For now, we are calling each chat channel/queue a “room”.  
+
+We are adding persistence, caching, and basic queue management. The basic idea is that for each room, we have an internal cached object that allows us to simplify the use of the room while all the details of handling both RabbitMQ and MongoDB interaction is implemented as part of the ChatRoom class.  
+
+Some notes about rooms and the ChatRoom class: 
+
+ChatRoom(deque) – inherits deque from the collections module 
+
+Each room has a name, passed to the constructor 
+
+This name is the default queue_name for consuming 
+
+Each room has a boolean “group_room” designating whether it supports a group or not 
+
+If the room is a group room, we do the following 
+
+Set the exchange name to be the room name 
+
+Declare the exchange, and bind the default queue to it  
+
+Each room also has an owner, specified by owner_alias: str 
+
+Each room has a member list. For a private queue it is the owner and one other. For a group queue any number of members can be added 
+
+Each member has a consume queue off the exchange that is the same name as their alias 
+
+You must have ‘add_group_member’ and ‘remove_group_member’ methods 
+
+We’ll need to know if a room should be saved/persisted, so we need a bool “dirty” flag 
+
+The room should have a create_time and modify_time 
+
+Each room has persist and restore methods that save and restore from mongodb. 
+
+Each room has its own collection, the name of which is the name of the room 
+
+You should have a document in the collection for the room metadata, 
+
+You should have a document in the collection for each message in the room 
+
+Each room should have a __retrieve_messages private method that gets messages from rabbitmq. 
+
+Other methods: 
+
+get_messages(num_messages: int, return_objects: bool) -> list of ChatMessage 
+
+send_message(message: str, mess_props: MessageProperties) -> bool 
+
+find_message(message_text: str) -> ChatMessage 
+
+get() -> ChatMessage – gets the next message in the deque from the right 
+
+put(message: ChatMessage) -> None – puts message into the (left of the) queue 
+
+You should have a class for message properties: MessageProperties() that holds the following properties: 
+
+mess_type: int - message type – either sent or received.  
+
+You should have constants for the type 
+
+room_name: str - room to which the message belongs 
+
+to_user: str – destination for message. Can be group exchange 
+
+from_user: str – alias that is the sender of the message 
+
+sent_time: datetime – timestamp for when the message was sent 
+
+rec_time: datetime – timestamp for when the message was received 
+
+sequence_number: int – number of the message in the sequence of messages 
+
+id: int – id of the message 
+
+You should have a class called ChatMessage(): 
+
+property message: str  - the actual chat message 
+
+property mess_props: MessageProperties – the message properties 
+
+property dirty: bool – flag for if an instance needs to be saved 
+
+I find it useful to have a RoomList class. You can either inherit list or create an internal private list that holds the list of rooms. Properties and Methods you should have: 
+
+Name: the list name.  
+
+add: add a new RoomChat instance to the list 
+
+remove: remove a RoomChat instance from the list 
+
+find: find a RoomChat instance by name 
+
+persist and restore, saving the list metadata and restoring the list metadata 
+
+After saving or restoring the metadata, iterate through all rooms in the list calling their persist or restore methods 
+
+  
+
+In your program, you will be connecting to RabbitMQ (RMQ) on a globally available server. That server is: 
+
+            IP: 35.236.51.203        port: 5672 
+
+You’ll be connecting to a globally available MongoDB instance: 
+
+            IP: 34.94.157.136        Port: 27017 
+
+Your API should be roughly the same, though we will use the concepts of room instead of queues.  
+
+The beginning of this process is simply to create an API that exposes the following endpoints/methods: 
+
+Send: accepts a message and a sends it to RMQ 
+
+http://<url>:<port>/send/?room_name=<name>&message=<your message>&from_alias=<alias>&to_alias=<alias>&group_room=<true/false> 
+
+Messages: returns the list of messages currently in the queue 
+
+http://<url>:<port>/messages/ 
+
+This method returns a list of messages: 
+
+[“test message 1”, “test message 2”, “another message”, “and so on”] 
+
+You will be using the “pika” (pip install pika) library to connect with RMQ. For a client-side HTTP library you should probably use either “requests” or “xhttp”. There are others, and you may use whichever library works best for you. 
+
+You will create a single python code file named “mess_chat.py” that implements the API. You should also have a python code file named “mess_chat_test.py” that tests your API. Your third file will be “rmq.py” and will contain the implementation for RMQ interaction.  
+
+You will have to learn how to use RMQ, though it is very similar in usage to most messaging servers. I recommend you develop a class for handling all RMQ interactions and use that class to implement your APIs. This file should have a test file “rmq_test.py” that tests the RMQ interactions. 
+
+Both unittest and pytest are good test frameworks for python. I tend to use both.  
+
+To run the tests, you can use appropriate commands in your powershell or terminal 
+
+However, I strongly recommend you use VSCode to run your tests. It’s easy to integrate either pytest or unittest (or both) into VSCode to run your tests. 
+
+You should be getting used to using postman (postman.com) to help you manually test your API’s 
+
+ 

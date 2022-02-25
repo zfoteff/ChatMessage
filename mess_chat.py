@@ -4,13 +4,12 @@ from bin.logger import Logger
 
 rmq = RMQMessageInteractions()
 app = FastAPI()
-chat_log = Logger("chat")
+chat_log = Logger("api")
 chat_log("[-+-] Started chat app")
 
 @app.get("/")
 async def root():
-    """
-    Root endpoint for browser navigation to http://localhost:8000/
+    """ Root endpoint for browser navigation to http://localhost:8000/
 
     Returns:
         dict: JSON(ish) response that can be viewed in the browser to confirm
@@ -20,16 +19,18 @@ async def root():
     return {'message': "You've hit Zac's API root endpoint"}
 
 @app.post("/send/")
-async def send(message: str):
-    """
-    Send endpoint for the application. 
+async def send(room_name: str, message: str, from_alias: str, to_alias: str, group_room: bool):
+    """ Send endpoint for the application. 
 
     Args:
-        message (str): Message to send to RMQ server
+        room_name (str): room name to send message to
+        message (str): message payload to send to room
+        from_alias (str): sender alias
+        to_alias (str): reciever alias
+        group_room (bool): Flag indicating if room is a group room
 
     Returns:
-       dict: JSON(ish) response that can be viewed in browser to 
-       confirm the message was enqueued
+        dict: JSON(ish) status of sent message user can view in the browser
     """
     result = rmq.sendMessage(message)
     chat_log(f"POST /send/ -- result: ENQUEUED")
@@ -37,8 +38,7 @@ async def send(message: str):
     
 @app.get('/messages/')
 async def messages():
-    """
-    Message retrieval endpoint for the application
+    """ Message retrieval endpoint for the application
 
     Returns:
         dict: JSON(ish) response so the user can view all the messages in the browser

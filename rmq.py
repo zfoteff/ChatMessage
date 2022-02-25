@@ -9,6 +9,8 @@ RMQ_USER = "class"
 RMQ_PASS = "CPSC313"
 RMQ_DEFAULT_PUBLIC_QUEUE = "general"
 RMQ_PRIVATE_QUEUE = "foteff"
+DB_HOST = '34.94.157.136'
+DB_PORT = '5672'
 GET_ALL_MESSAGES = -1
 
 logger = Logger(key="messageServer")
