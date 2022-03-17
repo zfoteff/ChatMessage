@@ -2,7 +2,7 @@
 """
 
 from bin.logger import Logger
-from MessageProperties import MessageProperties
+from message_props import MessageProperties
 
 logger = Logger("chatMessageHandler")
 
@@ -11,18 +11,18 @@ class ChatMessage:
         self.message = message
         self.mess_props = mess_pros
         self.dirty = dirty
-        
+
     @property
-    def message(self):
+    def message(self) -> str:
         return self.message
     
     @property
-    def mess_props(self):
+    def mess_props(self) -> MessageProperties:
         return self.mess_props
     
     @property
-    def dirty(self):
+    def dirty(self) -> bool:
         return self.dirty
     
-    def __str__(self):
+    def __str__(self) -> str:
         return (f"[+] Created new message. Message: {self.message}{self.mess_props}")

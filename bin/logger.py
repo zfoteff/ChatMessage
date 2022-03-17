@@ -7,7 +7,7 @@ import logging as log
 
 LOG_DIR = str(os.getcwd())+"\\logs\\"
 
-def log_setup(logger_name, log_file, mode='a'):
+def log_setup(logger_name: str, log_file: str, mode: str='a'):
     """
     Configure a new logger and return the new instance to the user
 
@@ -22,7 +22,7 @@ def log_setup(logger_name, log_file, mode='a'):
     
     #   Initialize handlers
     new_log = log.getLogger(logger_name)
-    formatter = log.Formatter("[%(asctime)s] %(message)s")
+    formatter = log.Formatter("[%(asctime)s] %(message)s | ")
     file_handler = log.FileHandler(log_file, mode=mode)
     file_handler.setFormatter(formatter)
     stream_handler = log.StreamHandler()
@@ -34,29 +34,38 @@ def log_setup(logger_name, log_file, mode='a'):
     return new_log
 
 class Logger():
-    """
-    Logger object that allows a user to quickly define a new instance and log results to the file
-    """
-    def __init__(self, key="none"):
-        """
-        Constructor
+    """Logger object that allows a user to quickly define a new instance and log results to the file"""
+    
+    def __init__(self, key: str="none"):
+        """Constructor for log object. Takes a name for the file and handles the rest of the
+        setup internally.
 
         Args:
-            log (str, optional): Log type. Defaults to "debug".
-            assignment (str, optional): Assignment/Name of the logger. Defaults to "none".
+            key (str, optional): Assignment/Name of the logger. Defaults to "none".
         """
         self.log_obj = log_setup(f"{key}", LOG_DIR+f"{key}.log")
         
-    def __call__(self, logStr):
+    def __call__(self, logStr: str, mode: str='i'):
         """
         Call the object to have a message immidiately logged to the debug output
 
         Args:
             logStr (str): Message to add to the logfile
+            mode (str, optional): Logging mode for the file. Defaults to 'i' for Info
         """
-        self.log_obj.info(logStr)
+        if mode == 'i':
+            self.log_obj.info(logStr)
+        elif mode == 'd':
+            self.log_obj.debug(logStr)
+        elif mode == 'e':
+            self.log_obj.error(logStr)
+        elif mode == 'w':
+            self.log_obj.warning(logStr)
+        else:
+            self.log_obj.info(logStr)
+
         
-    def log(self, logStr):
+    def log(self, logStr: str):
         """
         Log a debug string to the specified log file
 
@@ -65,7 +74,7 @@ class Logger():
         """
         self.log_obj.debug(logStr)
         
-    def info(self, logStr):
+    def info(self, logStr: str):
         """
         Log an info string to the specified log file
 
@@ -73,3 +82,27 @@ class Logger():
             logStr (str): String to add to logfile
         """
         self.log_obj.info(logStr)
+
+    def error(self, logStr: str):
+        """Log an error string to the log file
+
+        Args:
+            logStr (str): String to add to the logfile
+        """
+        self.log_obj.error(logStr)
+
+    def debug(self, logStr: str):
+        """Log an debug string to the log file
+
+        Args:
+            logStr (str): String to add to the logfile 
+        """
+        self.log_obj.debug(logStr)
+
+    def warning(self, logStr: str):
+        """Log an warning string to the log file
+
+        Args:
+            logStr (str): String to add to the logfile 
+        """
+        self.log_obj.warning(logStr)
