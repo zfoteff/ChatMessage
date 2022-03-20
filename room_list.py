@@ -1,10 +1,10 @@
 """ 
 Room list dequeue implementation for managing declared channels on the 
 messaging service
-
-@author Zac Foteff
-@version 1.0.0.
 """
+
+__author__= "Zac Foteff"
+__version__ =  "1.0.0."
 
 from db_helper import ChatRoomDBHelper
 from bin.logger import Logger
@@ -16,34 +16,39 @@ class RoomList:
     """
     RoomList object class
     """
+    def __init__(self, room_list: dict=None):
+        """
+        Stores rooms in a list of key-value pairs with the room name 
+        acting as the key. Should ensure that if no room list is passed to the 
+        constructor, then the application will try to restore a room list, or 
+        create a new list if no room list is already stored in the database
+        """
+
+        self.__room_list = {}
+        self.__db_helper = ChatRoomDBHelper()
+        
     def __persist():
+        """Persist a RoomList instance in the MongoDB
+        """
         pass
     
     def __restore():
+        """Restore a RoomList instance from the MongoDB
+        """
         pass
     
-    def __init__(self):
-        """
-        Stores rooms in a list of key-value pairs with the room name 
-        acting as the key
-        """
-        self.name = ""
-        self.room_list = {}
-        
     @property
-    def name(self) -> str:
-        return self.name
+    def room_list(self) -> dict:
+        return self.__room_list
     
-    def is_room_declared(self, room_name: str):
+    def is_room_declared(self, room_name: str) -> bool:
         """
         Check if room is declared in the room list
 
         Args:
             room_name (str): Room name to check existance of
-
         Returns:
-            bool: Return true if the room is declared in the room 
-            list, false otherwise
+            bool: Return true if the room is declared in the room list
         """
         return room_name in self.room_list.keys()
         
@@ -53,7 +58,6 @@ class RoomList:
 
         Args:
             new_room (ChatRoom): ChatRoom implementation
-
         Returns:
             bool: True if the room is successfully added into the room 
             list, false otherwise
@@ -67,17 +71,15 @@ class RoomList:
             return True
         
     def remove(self, room_name: str) -> bool:
-        """
-        Remove a room from the room list
+        """Remove a declared ChatRoom from the room list
 
         Args:
-            room_name (str): _description_
-
+            room_name (str): Key name of the room that should be removed from the list
         Returns:
             bool: Return true if the room is successfully removed from the 
             roomlist, false otherwise
         """
-        if self.is_room_declared(room_name) :
+        if self.is_room_declared(room_name):
             self.room_list.pop(room_name)
             logger(f"[-] Removed room {room_name} from roomlist")
             return True
@@ -85,7 +87,7 @@ class RoomList:
             logger("[*] Room is not declared in roomlist")
             return False
         
-    def find(self, room_name: str):
+    def find(self, room_name: str) -> ChatRoom:
         """
         Find a room in the room list and return it
 

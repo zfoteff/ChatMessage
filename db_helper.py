@@ -1,5 +1,6 @@
 """
-MongoDB database interaction helper file
+MongoDB database interaction helper file. Will be used in future to encapsulate all database interactions 
+into one file
 
 @author Zac Foteff
 @version 1.0.0.
@@ -7,14 +8,10 @@ MongoDB database interaction helper file
 
 import pymongo
 from bin.logger import Logger
-
-DB_HOST = '34.94.157.136'
-DB_PORT = '5672'
-DEFAULT_DB_NAME = ""
-DEFAULT_COLLECTION_NAME = ""
+from bin.constants import *
 
 class ChatRoomDBHelper():
-    def __init__(self, db_name: str=DEFAULT_DB_NAME, collection: str=DEFAULT_COLLECTION_NAME):
+    def __init__(self, db_name: str=DB_NAME, collection: str=DB_COLLECTION):
         self.client = pymongo.MongoClient(DB_HOST, DB_PORT)
         self.db = self.client[db_name]
         self.collection = collection
@@ -37,3 +34,5 @@ class ChatRoomDBHelper():
         """_summary_
         """
         pass
+
+ChatMessageDBHelper()

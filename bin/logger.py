@@ -7,7 +7,7 @@ import logging as log
 
 LOG_DIR = str(os.getcwd())+"\\logs\\"
 
-def log_setup(logger_name: str, log_file: str, mode: str='a'):
+def log_setup(logger_name: str, log_file: str, mode: str='w'):
     """
     Configure a new logger and return the new instance to the user
 
@@ -22,7 +22,7 @@ def log_setup(logger_name: str, log_file: str, mode: str='a'):
     
     #   Initialize handlers
     new_log = log.getLogger(logger_name)
-    formatter = log.Formatter("[%(asctime)s] %(message)s | ")
+    formatter = log.Formatter("[%(levelname)s]\t[%(asctime)s] %(message)s")
     file_handler = log.FileHandler(log_file, mode=mode)
     file_handler.setFormatter(formatter)
     stream_handler = log.StreamHandler()

@@ -4,6 +4,8 @@ Message properties object class file
 @author Zac Foteff
 @version 1.0.0.
 """
+__version__ = "1.0.0"
+__author__ = "Zac Foteff"
 
 from datetime import datetime
 from bin.logger import Logger
@@ -25,7 +27,7 @@ class MessageProperties:
                 to_user: str, 
                 from_user: str,
                 sent_time: datetime=datetime.now(),
-                rec_time: datetime=datetime.now()):
+                rec_time: datetime=None):
         """Instantiate a new MessageProperties class object. The object encapsulates
         all the properties of messages that are sent using the chat application API
 
@@ -36,8 +38,8 @@ class MessageProperties:
             room_name (str): Name of the room that the message is sent in
             to_user (str): Alias of the user the message should be sent to
             from_user (str): Alias of the user who sent the message
-            sent_time (datetime): Time the message was recieved by the system
-            rec_time (datetime): Time the message was recieved by the system
+            sent_time (datetime, optional): Time the message was recieved by the system. Defaults to the current time
+            rec_time (datetime, optional): Time the message was recieved by the system. Defaults to None
         """
         self.__sequence_number = sequence_number
         self.__id = id
@@ -60,26 +62,6 @@ class MessageProperties:
     def room_name(self) -> str:
         return self.__room_name
 
-    @property
-    def message_type(self) -> str:
-        return self.__mess_type
-
-    @property
-    def to_user(self) -> str:
-        return self.__to_user
-
-    @property
-    def from_user(self) -> str:
-        return self.__from_user
-
-    @property 
-    def sent_time(self) -> str:
-        return self.__sent_time
-
-    @property
-    def rec_time(self) -> str:
-        return self.__rec_time
-
     def to_dict(self) -> dict:
         """Custom to_dict method for message property objects. The custom approach is designed
         to help make interactions with the MongoDB easier
@@ -88,8 +70,8 @@ class MessageProperties:
             dict: Dictionary representation of the MessageProperty object
         """
         return {
-            "id": f"{self.id}",
-            "sequence_number": f"{self.sequence_number}",
+            "id": self.id,
+            "sequence_number": self.sequence_number,
             "room": f"{self.room_name}",
             "sender": f"{self.from_user}",
             "sent_time": f"{self.sent_time}",
@@ -98,6 +80,7 @@ class MessageProperties:
         }
 
     def __str__(self) -> str:
-        return (f"Message properties"
-               +f"\n\tID: {self.id} Sequence number: {self.sequence_number}\n\t"
-               +f"\n\tRoom: {self.room_name} Sender: {self.from_user} | {self.sent_time} Receiever: {self.to_user} | {self.rec_time}")
+        return (f"\nMessage properties"
+               +f"\n\tID: {self.id} Sequence number: {self.sequence_number}"
+               +f"\n\tRoom: {self.room_name}"
+               +f"\n\tSender: {self.from_user} | {self.sent_time}\n\tReceiever: {self.to_user} | {self.rec_time}")

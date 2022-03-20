@@ -17,7 +17,7 @@ app = FastAPI()
 chat_log = Logger("api")
 chat_log("[-+-] Started chat app")
 
-@app.get("/", status=200)
+@app.get("/", status_code=200)
 async def root():
     """ Root endpoint for browser navigation to http://localhost:8000/
 
@@ -28,7 +28,7 @@ async def root():
     chat_log(f"GET / -- result: Success")
     return {'message': "You've hit Zac's API root endpoint"}
 
-@app.post("/send/", status=201)
+@app.post("/send/", status_code=201)
 async def send(room_name: str, message: str, from_alias: str, to_alias: str, group_room: bool=False):
     """ Send endpoint for the application
 
@@ -49,7 +49,7 @@ async def send(room_name: str, message: str, from_alias: str, to_alias: str, gro
     chat_log(f"POST /send/ -- result: ENQUEUED")
     return result
     
-@app.get('/messages/', status=200)
+@app.get('/messages/', status_code=200)
 async def messages():
     """ Message retrieval endpoint for the application
 
