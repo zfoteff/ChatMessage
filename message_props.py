@@ -9,9 +9,7 @@ __author__ = "Zac Foteff"
 
 from datetime import datetime
 from bin.logger import Logger
-
-MESSAGE_SENT = 0
-MESSAGE_RECIEVED = 1
+from bin.constants import *
 
 logger = Logger("messageProperties")
 
@@ -19,10 +17,8 @@ class MessageProperties:
     """
     MessageProperties class object
     """
-    def __init__(self, 
-                sequence_number: int, 
-                id: int, 
-                mess_type: str, 
+    def __init__(self,
+                mess_type: int, 
                 room_name: str, 
                 to_user: str, 
                 from_user: str,
@@ -41,8 +37,6 @@ class MessageProperties:
             sent_time (datetime, optional): Time the message was recieved by the system. Defaults to the current time
             rec_time (datetime, optional): Time the message was recieved by the system. Defaults to None
         """
-        self.__sequence_number = sequence_number
-        self.__id = id
         self.__mess_type = mess_type
         self.__room_name = room_name
         self.__from_user = from_user
@@ -51,16 +45,28 @@ class MessageProperties:
         self.__rec_time = rec_time
     
     @property
-    def id(self) -> int:
-        return self.__id
-    
-    @property
-    def sequence_number(self) -> int:
-        return self.__sequence_number
-    
-    @property
     def room_name(self) -> str:
         return self.__room_name
+
+    @property
+    def mess_type(self) -> int:
+        return self.__mess_type
+
+    @property
+    def from_user(self) -> str:
+        return self.__from_user
+
+    @property
+    def to_user(self) -> str:
+        return self.__to_user
+
+    @property
+    def sent_time(self) -> datetime:
+        return self.__sent_time
+
+    @property
+    def rec_time(self) -> datetime:
+        return self.__rec_time
 
     def to_dict(self) -> dict:
         """Custom to_dict method for message property objects. The custom approach is designed
@@ -70,17 +76,15 @@ class MessageProperties:
             dict: Dictionary representation of the MessageProperty object
         """
         return {
-            "id": self.id,
-            "sequence_number": self.sequence_number,
-            "room": f"{self.room_name}",
-            "sender": f"{self.from_user}",
+            "mess_type": f"{self.mess_type}",
+            "room_name": f"{self.room_name}",
+            "from_user": f"{self.from_user}",
             "sent_time": f"{self.sent_time}",
-            "reciever": f"{self.to_user}",
-            "recieved_time": f"{self.rec_time}",
+            "to_user": f"{self.to_user}",
+            "rec_time": f"{self.rec_time}",
         }
 
     def __str__(self) -> str:
         return (f"\nMessage properties"
-               +f"\n\tID: {self.id} Sequence number: {self.sequence_number}"
-               +f"\n\tRoom: {self.room_name}"
+               +f"\n\tRoom: {self.room_name} Type: {self.mess_type}"
                +f"\n\tSender: {self.from_user} | {self.sent_time}\n\tReceiever: {self.to_user} | {self.rec_time}")

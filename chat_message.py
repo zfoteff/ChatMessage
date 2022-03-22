@@ -3,13 +3,15 @@
 __version__ = "1.0.0"
 __author__ = "Zac Foteff"
 
-from bin.logger import Logger
 from message_props import MessageProperties
+from rmq import RMQProperties
+from bin.logger import Logger
+from bin.constants import *
 
 log = Logger("chatMessageHandler")
 
 class ChatMessage:
-    def __init__(self, message: str, mess_props: MessageProperties=None, dirty: bool=False):
+    def __init__(self, message: str, mess_props: MessageProperties=None, rmq_props: RMQProperties=None, dirty: bool=False):
         """Instantiates a ChatMessage object. The object contains a message to be stored in the MongoDB to be 
         delievered to a user later. The object also contains all necessary properties and metadata of the message
         with a MessageProperties object
@@ -27,6 +29,7 @@ class ChatMessage:
 
         self.__message = message
         self.__mess_props = mess_props
+        self.__rmq_props = rmq_props
         self.__dirty = dirty
 
     @property
@@ -36,6 +39,10 @@ class ChatMessage:
     @property
     def mess_props(self) -> MessageProperties:
         return self.__mess_props
+
+    @property
+    def rmq_props(self) -> RMQProperties:
+        return self.__rmq_props
     
     @property
     def dirty(self) -> bool:

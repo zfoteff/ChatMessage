@@ -5,28 +5,29 @@ Class for interactions with MongoDB and RabbitMQ to create a Chat Room instance
 __author__ = "Zac Foteff"
 __version__ = "1.0.0."
 
-import time
+import pika
+import pika.exceptions
+from datetime import datetime
 from pymongo import MongoClient
 from collections import deque
 from bin.logger import Logger
 from message_props import MessageProperties
 from chat_message import ChatMessage
-from rmq import RMQMessageInteractions
-from db_helper import ChatRoomDBHelper
 from bin.constants import *
+from rmq import RMQMessageInteractions, RMQProperties
 
 log = Logger("chatRoom")
 
 class ChatRoom(deque):
-    def __init__(self, room_name: str,
-                 owner_alias: str,
-                 member_list: list=None,
-                 room_type: int=CHAT_ROOM_TYPE_PUBLIC,
-                 dirty: bool=False,
-                 create_time: float=time.time(),
-                 modify_time: float=time.time()):
-        """Intantiate a ChatRoom class object. Requires a room name and an owner alias by default.
-        All other properties are created in the constructor, or restored from an existing entry in 
+    def __init__(
+        self, 
+        room_name: str=RMQ_DEFAULT_PUBLIC_QUEUE,
+        member_list: list=[],
+        owner_alias: str="", 
+        exchange_name: str=RMQ_DEFAULT_PUBLIC_EXCHANGE,
+        group_queue: bool=True):
+        """Intantiate a ChatRoom class object. All properties are created in the constructor, or
+        restored from an existing entry in storage
         storage
 
         Args:
@@ -39,53 +40,143 @@ class ChatRoom(deque):
             modify_time (float, optional): Last time that the room was modified
         """
         super(ChatRoom, self).__init__()
-
-        if member_list is None:
-            member_list = []
-
         self.__room_name = room_name
-        self.__member_list = member_list
-        self.__owner_alias = owner_alias
-        self.__room_type = room_type
-        self.__dirty = dirty
-        self.__create_time = create_time
-        self.__modify_time = modify_time
-        self.__mongo_collection = ChatRoomDBHelper()
+
+        #   Initialize MongoDB resources
+        self.__mongo_client = MongoClient(DB_HOST)
+        self.__mongo_db = self.__mongo_client.gufoteff
+        self.__mongo_collection = self.__mongo_db.get_collection(room_name)
+        if self.__mongo_collection is None:
+            #   Initialize the chat queue collection in the DB if it does not already exist
+            self.__mongo_collection = self.__mongo_db.create_collection(room_name)
+
+        #   Initialize RMQ resources
+        self.__rmq = RMQMessageInteractions()
+        if group_queue:
+            #   Declare and bind the new exhange to the queue
+            self.__rmq.declare_exchange(exchange_name=exchange_name)
+            
+        if self.__restore() is True:
+            #   Element is restored from storage, so indicate there are no changes to be saved
+            self.__dirty = False
+        else:
+            #   Element has not be restored, so a new Chat room is created
+            self.__member_list = []
+            self.__group_queue = group_queue
+            self.__dirty = True
+            self.__create_time = datetime.now()
+            self.__modify_time = datetime.now()
 
     @property
     def room_name(self):
         return self.__room_name
 
     @property
-    def owner(self) -> str:
-        return self.__owner_alias
+    def mongo_db(self):
+        return self.__mongo_db
 
     @property
-    def room_type(self) -> int:
-        return self.__room_type
+    def mongo_collection(self):
+        return self.__mongo_collection
 
     @property
-    def members(self) -> list:
+    def dirty(self):
+        return self.__dirty
+
+    @property
+    def group_queue(self):
+        return self.__group_queue
+
+    @property
+    def rmq(self):
+        return self.__rmq
+
+    @property
+    def member_list(self):
         return self.__member_list
 
     @property
-    def dirty(self) -> bool:
-        return self.__dirty
+    def length(self) -> int:
+        return len(self)
 
     def __retrieve_messages(self):
         """
-        Restore messages specific to the ChatRoom from storage
+        Restore messages specific to the ChatRoom from RMQ.
+        If the channel is closed, issue warning and stop the process
+        First, create RMQInteractions instance
 
         Returns:
             list(ChatMessage): List of chat messages retrieved from storage
         """
-        pass
+        log("[*] Attempting message retrieval from RMQ")
+        if self.rmq.channel.is_closed:
+            log("[-] Channel is closed. Aborting operation", 'w')
+            return
+        
+        log(f"Beginning consumption from RMQ | Queue: {self.rmq.queue} Exchange: {self.rmq_exchange_name} Cache: {self} Channel: {self.rmq.channel}")
+        for metadata, props, body in self.rmq.channel.consume(self.rmq.queue, auto_ack=True, inactivity_timeout=2):
+            if body is not None:
+                new_mess_props = MessageProperties(
+                    mess_type=MESSAGE_RECEIVED, # this is now received, the original will be sent
+                    to_user=props.headers['_MessProperties__to_user'],
+                    from_user=props.headers['_MessProperties__from_user'],
+                    sent_time=props.headers['_MessProperties__sent_time'],
+                    rec_time=props.headers['_MessProperties__rec_time']
+                )
+                new_message = ChatMessage(body.decode('ascii'), new_mess_props,)
+
+        requeued_messages = self.rmq.channel.cancel()
+        log.info(f'Called cancel after retreive messages, result of that call is {requeued_messages}')
 
     def __persist(self):
-        pass
+        """Persist object data in MongoDB. First, save the user list if it isn't already there
+        or there are changes that need to be persisted. Next, for each message in the list create
+        and save a document for that user
+        """
+        if self.__mongo_collection.find_one({ 'room_name': { '$exists': 'false'}}) is None:
+            self.__mongo_collection._insert_one({
+                "room_name": self.room_name, 
+                "create_time": self.__create_time, 
+                "modify_time": self.__modify_time
+                })
+        
+        for message in list(self):
+            if message.dirty:
+                serialized = message.to_dict()
+                serialized.rmq_props = self.rmq.__dict__()
+                self.mongo_collection.insert_one(serialized)
+                message.dirty = False
 
     def __restore(self):
-        pass
+        """Restore object data from MongoDB. Find record using the room name as a key and
+        populate name, create, and modify time.
+        Next, retrieve that messages associated with the chat room (every document with 
+        a key called 'message'). For each dictionary we get back (the documents), create 
+        a message properties instance and a message instance and put them in the deque by 
+        calling the put method
+
+        Returns:
+            bool: Returns True if the object and its messages were restored successfully. 
+            False otherwise
+        """
+        metadata = self.mongo_collection.find_one({'name': {'$exists': 'true'}})
+        if metadata is None:
+            log("[*] No metadata found for ChatRoom object", 'w')
+            return False
+        self.__room_name = metadata['room_name']
+        self.__create_time = metadata['create_time']
+        self.__modify_time = metadata['modify_time']
+        for mess_dict in self.mongo_collection.find({'message': {'$exists': 'true'}}):
+            new_mess_props = MessageProperties(
+                mess_dict['mess_props']['mess_type'],
+                mess_dict['mess_props']['room_name'],
+                mess_dict['mess_props']['to_user'],
+                mess_dict['mess_props']['from_user'],
+                mess_dict['mess_props']['sent_time'],
+                mess_dict['mess_props']['rec_time'])
+            new_message = ChatMessage(mess_dict['message'], new_mess_props, dirty=False)
+            self.put(new_message)
+        return True
 
     def is_registered(self, username: str) -> bool:
         """Check if the inputted username is registered to the ChatRoom
@@ -112,51 +203,87 @@ class ChatRoom(deque):
             log("[*] User is already registered for the chat room. Cancelling operation", "w")
             return False
 
-        self.members.append(alias)
+        self.member_list.append(alias)
         return True
 
-    def get_messages(self, num_messages: int, return_objects: bool=True) -> list:
-        """Retrieve the ChatRoom's messages from storage. Users have the option of returning the objects
-        as ChatMessage objects, or as JSON representations of ChatMessage objects
+    def get_messages(self, num_messages: int=GET_ALL_MESSAGES, return_objects: bool=True) -> list:
+        """Retrieve the ChatRoom's messages from storage. Also retrieves new messages from RMQ. 
+        Users have the option of returning the objects as ChatMessage objects, or just the message content
 
         Args:
-            num_messages (int): Number of messages to retrieve from the message queue
+            num_messages (int, optional): Number of messages to retrieve from the message queue. Defaults to GET_ALL_MESSAGES
             return_objects (bool, optional): Flag indicating if the method should return ChatMessage 
-            objects, or JSON responses. Defaults to True (ChatMessage objects).
+            objects, or strings. Defaults to True (ChatMessage objects).
 
         Returns:
-            list: List of messages associated with the ChatRoom object
+            list: List of messages associated with the ChatRoom object and the amount of strings retreived
         """
-        pass
+        log(f"[*] Requested retrieval of {GET_ALL_MESSAGES} from our queue of messages")
+        self.__retrieve_messages()
+        log(f"[*] Number of messages in internal queue {self.length}")
+        if num_messages == GET_ALL_MESSAGES:
+            if return_objects:
+                return list(self), self.length
+            else:
+                serialized_list = [message.to_dict() for message in list(self)]
+                return serialized_list, self.length
+        else:
+            messages = list()
+            cur_num_messages = 0
+            for message in list(self):
+                if cur_num_messages < num_messages:
+                    #   If return objects flag is raised, append ChatMessage object, otherwise append dict representation
+                    message.append(message) if return_objects else message.append(message.message)
+                    cur_num_messages += 1
+                else:
+                    return messages, cur_num_messages
+
 
     def send_message(self, message: str, mess_props: MessageProperties) -> bool:
-        """Send message
+        """Send message using RMQ. Also creates local message instance that is added to internal queue
 
         Args:
-            message (str): _description_
-            mess_props (MessageProperties): _description_
+            message (str): Message to send to the chat application
+            mess_props (MessageProperties): Properties of the message being sent
         Returns:
-            bool: _description_
+            bool: Return true if the message is successfully submitted to RMQ, false otherwise
         """
-        pass
+        try:
+            self.rmq.channel.basic_publish(self.rmq.exchange_name, 
+                                        routing_key=self.rmq.exchange_name,
+                                        properties=pika.BasicProperties(headers=mess_props.__dict__),
+                                        body=message, mandatory=True)
+            log(f"[+] Succesfully published message to messaging server. Message: {message}")
+            self.put(ChatMessage(message, mess_props))
+            return True
+        except pika.exceptions.UnroutableError:
+            log(f"[-] Message was returned undeliverable.\n\tMessage: {message}\n\tTarget: {self.rmq.queue}")
+            return False
 
     def find_message(self, message_text: str) -> ChatMessage:
-        """_summary_
+        """Find message object in the deque using the text of the message as a key
+        TODO: Transition to using unique oids
 
         Args:
             message_text (str): _description_
         Returns:
             ChatMessage: _description_
         """
-        pass
+        for chat_message in deque:
+            if chat_message.message == message_text:
+                return chat_message
+        return None
 
     def get(self) -> ChatMessage:
-        """_summary_
+        """Return the last message in the deque
 
         Returns:
-            ChatMessage: _description_
+            ChatMessage: Retrieved ChatMessage
         """
-        pass
+        try:
+            return super()[-1]
+        except: 
+            log("[*] No messages in ChatRoom", 'd')
 
     def put(self, message: ChatMessage=None) -> None:
         """Puts message into the dequeue. Overrides default put method to place ChatMessages
@@ -180,12 +307,10 @@ class ChatRoom(deque):
         return {
             'room_name': f"{self.room_name}",
             'room_type': f"{self.room_type}",
-            'owner': f"{self.owner}",
             'create_time': f"{self.__create_time}",
             'modify_time': f"{self.__modify_time}",
-            'create_new': self.create_new,
-            'members': self.members
+            'member_list': self.member_list
         }
 
     def __str__(self) -> str:
-        return f"ChatRoom(Room Name: {self.room_name} Room Type: {self.room_type} Owner: {self.owner})"
+        return f"ChatRoom(Room Name: {self.room_name} Room Type: {self.room_type})"
