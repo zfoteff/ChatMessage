@@ -11,8 +11,8 @@ from datetime import datetime
 from pymongo import MongoClient, ReturnDocument
 from collections import deque
 from bin.logger import Logger
-from message_props import MessageProperties
-from chat_message import ChatMessage
+from src.message_props import MessageProperties
+from src.chat_message import ChatMessage
 from bin.constants import *
 
 log = Logger("chatRoom")

@@ -3,8 +3,8 @@
 __version__ = "1.0.0"
 __author__ = "Zac Foteff"
 
-from message_props import MessageProperties
-from rmq import RMQProperties
+from src.message_props import MessageProperties
+from src.rmq import RMQProperties
 from bin.logger import Logger
 from bin.constants import *
 
@@ -25,7 +25,7 @@ class ChatMessage:
         if mess_props == None:
             #   If no message properties are supplied, autogenerate properties with placeholder values
             log("[-] No message properties included with submitted message. Auto populating ...", 'w')
-            mess_props = MessageProperties(-1, -1, 'Auto generated properties', "bin", "Unknown", "Unknown")
+            mess_props = MessageProperties(MESSAGE_SENT, 'Auto generated properties', "Unknown", "Unknown")
 
         self.__message = message
         self.__mess_props = mess_props

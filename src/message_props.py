@@ -83,7 +83,7 @@ class MessageProperties:
             dict: Dictionary representation of the MessageProperty object
         """
         return {
-            "mess_type": f"{self.mess_type}",
+            "mess_type": self.mess_type,
             "sequence_num": self.sequence_num,
             "room_name": f"{self.room_name}",
             "from_user": f"{self.from_user}",

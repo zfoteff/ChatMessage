@@ -6,7 +6,6 @@ API for the message chat application
 """
 
 import socket
-import datetime
 from fastapi import FastAPI, Request, status
 from fastapi.responses import JSONResponse, Response
 from bin.constants import *

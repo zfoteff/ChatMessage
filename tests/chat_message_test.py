@@ -6,6 +6,7 @@ __author__ = "Zac Foteff"
 import unittest
 import time
 from bin.logger import Logger
+from bin.constants import *
 from src.chat_message import ChatMessage
 from src.message_props import MessageProperties
 
@@ -31,12 +32,13 @@ class MessagePropertiesTests(unittest.TestCase):
         chat_mess = ChatMessage(self.TEST_MESSAGE, mess_prop)
         self.assertIsNotNone(mess_prop)
         self.assertIsNotNone(chat_mess)
+        self.assertIsInstance(chat_mess, ChatMessage)
         self.assertEqual(chat_mess.message, self.TEST_MESSAGE)
         self.assertEqual(chat_mess.mess_props, mess_prop)
         elapsed_time = time.perf_counter() - start_time
         log(chat_mess, 'd')
         log(chat_mess.to_dict(), 'd')
-        log(f"Completed create single instance test in {elapsed_time:.5f}")
+        log(f"[+] Completed create single instance test in {elapsed_time:.5f}")
 
     def test_instance_without_properties(self):
         """
@@ -51,11 +53,31 @@ class MessagePropertiesTests(unittest.TestCase):
         self.assertEqual(chat_mess.message, self.TEST_MESSAGE)
 
         mess_props = chat_mess.mess_props.to_dict()
-        self.assertEqual(mess_props['id'], -1)
-        self.assertEqual(mess_props['sequence_number'], -1)
-        self.assertEqual(mess_props['room'], 'bin')
-        self.assertEqual(mess_props['sender'], "Unknown")
-        self.assertEqual(mess_props['reciever'], "Unknown")
+        self.assertEqual(mess_props['mess_type'], MESSAGE_SENT)
+        self.assertEqual(mess_props['sequence_num'], -1)
+        self.assertEqual(mess_props['from_user'], "Unknown")
+        self.assertEqual(mess_props['to_user'], "Unknown"),
+        self.assertEqual(mess_props['room_name'], "Auto generated properties"),
         elapsed_time = time.perf_counter() - start_time
         log(chat_mess, 'd')
-        log(f"Completed create instance without properties test in {elapsed_time:.5f}")
+        log(f"[+] Completed create instance without properties test in {elapsed_time:.5f}")
+
+    def test_create_identical_instances(self):
+        """
+        Assert that two instances of the ChatMessage object with identical parameters create
+        two seperate objects
+        """
+        start_time = time.perf_counter()
+        mess_prop_1 = MessageProperties(MESSAGE_SENT, self.TEST_ROOM, "u1", 'u2')
+        mess_prop_2 = MessageProperties(MESSAGE_SENT, self.TEST_ROOM, "u1", 'u2')
+        chat_mess_1 = ChatMessage(self.TEST_MESSAGE, mess_prop_1)
+        chat_mess_2 = ChatMessage(self.TEST_MESSAGE, mess_prop_2)
+        self.assertIsNotNone(chat_mess_1)
+        self.assertIsNotNone(chat_mess_2)
+        self.assertIsInstance(chat_mess_1, ChatMessage)
+        self.assertIsInstance(chat_mess_2, ChatMessage)
+        self.assertIsNot(chat_mess_1, chat_mess_2)
+        log(chat_mess_1, 'd')
+        log(chat_mess_2, 'd')
+        elapsed_time = time.perf_counter() - start_time
+        log(f"[+] Completed identical instances test in {elapsed_time:.5f}")
