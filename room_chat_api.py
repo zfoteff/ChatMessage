@@ -8,12 +8,12 @@ API for the message chat application
 import socket
 import datetime
 from fastapi import FastAPI, Request, status
-from fastapi.responses import JSONResponse, ORJSONResponse, Response
+from fastapi.responses import JSONResponse, Response
 from bin.constants import *
 from bin.logger import Logger
-from chat_room import ChatRoom
-from message_props import MessageProperties
-from chat_message import ChatMessage
+from src.chat_room import ChatRoom
+from src.message_props import MessageProperties
+from src.chat_message import ChatMessage
 
 app = FastAPI()
 log = Logger("api")

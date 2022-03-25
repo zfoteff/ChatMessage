@@ -8,13 +8,12 @@ __version__ = "1.0.0."
 import pika
 import pika.exceptions
 from datetime import datetime
-from pymongo import MongoClient
+from pymongo import MongoClient, ReturnDocument
 from collections import deque
 from bin.logger import Logger
 from message_props import MessageProperties
 from chat_message import ChatMessage
 from bin.constants import *
-from rmq import RMQMessageInteractions, RMQProperties
 
 log = Logger("chatRoom")
 
@@ -24,8 +23,9 @@ class ChatRoom(deque):
         room_name: str=RMQ_DEFAULT_PUBLIC_QUEUE,
         member_list: list=[],
         owner_alias: str="", 
-        exchange_name: str=RMQ_DEFAULT_PUBLIC_EXCHANGE,
-        group_queue: bool=True):
+        group_queue: bool=True,
+        create_time: datetime=datetime.now(),
+        modify_time: datetime=datetime.now()):
         """Intantiate a ChatRoom class object. All properties are created in the constructor, or
         restored from an existing entry in storage
         storage
@@ -36,25 +36,24 @@ class ChatRoom(deque):
             owner_alias (str): Alias of the room creator
             room_type (int, optional): Type of room. Defaults to public
             create_new (bool, optional): Flag indicating if the chat room exists in the database 
-            create_time (float, optional): Time that the room was created
-            modify_time (float, optional): Last time that the room was modified
+            create_time (datetime, optional): Time that the room was created
+            modify_time (datetime, optional): Last time that the room was modified
         """
         super(ChatRoom, self).__init__()
         self.__room_name = room_name
 
         #   Initialize MongoDB resources
-        self.__mongo_client = MongoClient(DB_HOST)
+        self.__mongo_client = MongoClient(DB_HOST, DB_PORT)
         self.__mongo_db = self.__mongo_client.gufoteff
         self.__mongo_collection = self.__mongo_db.get_collection(room_name)
         if self.__mongo_collection is None:
             #   Initialize the chat queue collection in the DB if it does not already exist
             self.__mongo_collection = self.__mongo_db.create_collection(room_name)
 
-        #   Initialize RMQ resources
-        self.__rmq = RMQMessageInteractions()
-        if group_queue:
-            #   Declare and bind the new exhange to the queue
-            self.__rmq.declare_exchange(exchange_name=exchange_name)
+        self.__mongo_seq_collection = self.__mongo_db.get_collection('sequence')
+        if self.__mongo_seq_collection is None:
+            #   Initialize the sequence number collection in the DB if it does not already exist
+            self.__mongo_seq_collection = self.__mongo_db.create_collection('sequence')
             
         if self.__restore() is True:
             #   Element is restored from storage, so indicate there are no changes to be saved
@@ -64,8 +63,8 @@ class ChatRoom(deque):
             self.__member_list = []
             self.__group_queue = group_queue
             self.__dirty = True
-            self.__create_time = datetime.now()
-            self.__modify_time = datetime.now()
+            self.__create_time = create_time
+            self.__modify_time = modify_time
 
     @property
     def room_name(self):
@@ -114,14 +113,15 @@ class ChatRoom(deque):
             return
         
         log(f"Beginning consumption from RMQ | Queue: {self.rmq.queue} Exchange: {self.rmq_exchange_name} Cache: {self} Channel: {self.rmq.channel}")
-        for metadata, props, body in self.rmq.channel.consume(self.rmq.queue, auto_ack=True, inactivity_timeout=2):
+        for _, props, body in self.rmq.channel.consume(self.rmq.queue, auto_ack=True, inactivity_timeout=2):
             if body is not None:
                 new_mess_props = MessageProperties(
-                    mess_type=MESSAGE_RECEIVED, # this is now received, the original will be sent
+                    mess_type=MESSAGE_RECEIVED,
+                    room_name=props.headers['_MessProperties__room_name'],
                     to_user=props.headers['_MessProperties__to_user'],
                     from_user=props.headers['_MessProperties__from_user'],
                     sent_time=props.headers['_MessProperties__sent_time'],
-                    rec_time=props.headers['_MessProperties__rec_time']
+                    rec_time=datetime.now()
                 )
                 new_message = ChatMessage(body.decode('ascii'), new_mess_props,)
 
@@ -143,7 +143,6 @@ class ChatRoom(deque):
         for message in list(self):
             if message.dirty:
                 serialized = message.to_dict()
-                serialized.rmq_props = self.rmq.__dict__()
                 self.mongo_collection.insert_one(serialized)
                 message.dirty = False
 
@@ -172,11 +171,27 @@ class ChatRoom(deque):
                 mess_dict['mess_props']['room_name'],
                 mess_dict['mess_props']['to_user'],
                 mess_dict['mess_props']['from_user'],
+                mess_dict['mess_props']['sequence_num'],
                 mess_dict['mess_props']['sent_time'],
                 mess_dict['mess_props']['rec_time'])
             new_message = ChatMessage(mess_dict['message'], new_mess_props, dirty=False)
             self.put(new_message)
         return True
+
+    def __get_next_sequence_num(self) -> int:
+        """Queries the sequence number collection from MongoDB and selects the next 
+        sequence number to assign to the message
+
+        Returns:
+            int: Next sequence number to assign to new messages
+        """
+        sequence_num = self.__mongo_seq_collection.find_one_and_update(
+            {'_id': 'userid'},
+            {'$inc': {self.room_name: 1}},
+            project={self.room_name: True, '_id': False},
+            upsert=True,
+            return_document=ReturnDocument.AFTER)
+        return sequence_num
 
     def is_registered(self, username: str) -> bool:
         """Check if the inputted username is registered to the ChatRoom
@@ -237,7 +252,6 @@ class ChatRoom(deque):
                     cur_num_messages += 1
                 else:
                     return messages, cur_num_messages
-
 
     def send_message(self, message: str, mess_props: MessageProperties) -> bool:
         """Send message using RMQ. Also creates local message instance that is added to internal queue
@@ -313,4 +327,4 @@ class ChatRoom(deque):
         }
 
     def __str__(self) -> str:
-        return f"ChatRoom(Room Name: {self.room_name} Room Type: {self.room_type})"
+        return f"ChatRoom(Room Name: {self.room_name} Room Type: {self.room_type} Members: {self.member_list})"

@@ -6,8 +6,8 @@ __author__ = "Zac Foteff"
 import unittest
 import time
 from bin.logger import Logger
-from chat_message import ChatMessage
-from message_props import MessageProperties
+from src.chat_message import ChatMessage
+from src.message_props import MessageProperties
 
 log = Logger("./chatMessageTest")
 

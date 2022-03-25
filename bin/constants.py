@@ -11,6 +11,10 @@ DB_PASS = "CPSC313"
 DB_AUTH_SOURCE = "cpsc313"
 DB_NAME = ""
 DB_COLLECTION = ""
+DB_ROOM_LIST_COLLECTION = 'rooms'
+DB_USER_LIST_COLLECTION = 'users'
+DB_DEFAULT_ROOM_LIST = 'main'
+DB_DEFAULT_USER_LIST = 'global'
 
 #   RMQ Constants
 RMQ_DEV_HOST = "localhost"
@@ -29,3 +33,6 @@ MESSAGE_SENT = 0
 #   ChatRoom Constants
 CHAT_ROOM_TYPE_PUBLIC = 100
 CHAT_ROOM_TYPE_PRIVATE = 200
+
+#   RoomList Constants
+DEFAULT_ROOM_LIST_ID = "roomlist_foteff"

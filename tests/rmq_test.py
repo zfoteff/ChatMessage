@@ -1,6 +1,6 @@
 import unittest
 from bin.logger import Logger
-from rmq import RMQ_PRIVATE_QUEUE, RMQMessageInteractions as RMQ
+from src.rmq import RMQ_PRIVATE_QUEUE, RMQMessageInteractions as RMQ
 import time
 
 URL = "http://localhost:8000/"

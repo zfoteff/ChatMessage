@@ -6,7 +6,7 @@ __author__ = "Zac Foteff"
 import unittest
 import time
 from bin.logger import Logger
-from message_props import MessageProperties
+from src.message_props import MessageProperties
 
 log = Logger("./messagePropertiesTest")
 

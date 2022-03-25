@@ -14,11 +14,10 @@ class RMQMessageInteractions:
     """
     Rabbit Message Queue interaction object
     """
-    def __init__(
-        self, 
-        host=RMQ_PROD_HOST, 
-        queue: str=RMQ_DEFAULT_PUBLIC_QUEUE, 
-        exchange: str=RMQ_DEFAULT_PUBLIC_EXCHANGE):
+    def __init__(self, 
+                host=RMQ_PROD_HOST, 
+                queue: str=RMQ_DEFAULT_PUBLIC_QUEUE, 
+                exchange: str=RMQ_DEFAULT_PUBLIC_EXCHANGE):
         """
         Instantiate RabbitMQ interaction interface. Allows user to pass a queue to connect to. Will create
         a connection to the RMQ server that allows user to send and recieve messages. Depends on the 
