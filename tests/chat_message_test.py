@@ -12,8 +12,8 @@ from src.message_props import MessageProperties
 
 log = Logger("./chatMessageTest")
 
-class MessagePropertiesTests(unittest.TestCase):
-    """Test cases for MeessageProperties class object"""
+class ChatMessageTests(unittest.TestCase):
+    """Test cases for ChatMessage class object"""
 
     TEST_ROOM = "zfoteff_test"
     TEST_MESSAGE = "Test message"

@@ -21,9 +21,9 @@ class ChatRoom(deque):
     def __init__(
         self, 
         room_name: str=RMQ_DEFAULT_PUBLIC_QUEUE,
+        room_type: int=CHAT_ROOM_TYPE_PUBLIC,
         member_list: list=[],
-        owner_alias: str="", 
-        group_queue: bool=True,
+        owner_alias: str="",
         create_time: datetime=datetime.now(),
         modify_time: datetime=datetime.now()):
         """Intantiate a ChatRoom class object. All properties are created in the constructor, or
@@ -60,8 +60,9 @@ class ChatRoom(deque):
             self.__dirty = False
         else:
             #   Element has not be restored, so a new Chat room is created
-            self.__member_list = []
-            self.__group_queue = group_queue
+            self.__member_list = member_list
+            self.__owner_alias = owner_alias
+            self.__room_type = room_type
             self.__dirty = True
             self.__create_time = create_time
             self.__modify_time = modify_time
@@ -71,24 +72,16 @@ class ChatRoom(deque):
         return self.__room_name
 
     @property
-    def mongo_db(self):
-        return self.__mongo_db
-
-    @property
-    def mongo_collection(self):
-        return self.__mongo_collection
-
-    @property
     def dirty(self):
         return self.__dirty
 
     @property
-    def group_queue(self):
-        return self.__group_queue
+    def room_type(self) -> int:
+        return self.__room
 
     @property
-    def rmq(self):
-        return self.__rmq
+    def owner_alias(self) -> str:
+        return self.__owner_alias
 
     @property
     def member_list(self):
@@ -97,36 +90,6 @@ class ChatRoom(deque):
     @property
     def length(self) -> int:
         return len(self)
-
-    def __retrieve_messages(self):
-        """
-        Restore messages specific to the ChatRoom from RMQ.
-        If the channel is closed, issue warning and stop the process
-        First, create RMQInteractions instance
-
-        Returns:
-            list(ChatMessage): List of chat messages retrieved from storage
-        """
-        log("[*] Attempting message retrieval from RMQ")
-        if self.rmq.channel.is_closed:
-            log("[-] Channel is closed. Aborting operation", 'w')
-            return
-        
-        log(f"Beginning consumption from RMQ | Queue: {self.rmq.queue} Exchange: {self.rmq_exchange_name} Cache: {self} Channel: {self.rmq.channel}")
-        for _, props, body in self.rmq.channel.consume(self.rmq.queue, auto_ack=True, inactivity_timeout=2):
-            if body is not None:
-                new_mess_props = MessageProperties(
-                    mess_type=MESSAGE_RECEIVED,
-                    room_name=props.headers['_MessProperties__room_name'],
-                    to_user=props.headers['_MessProperties__to_user'],
-                    from_user=props.headers['_MessProperties__from_user'],
-                    sent_time=props.headers['_MessProperties__sent_time'],
-                    rec_time=datetime.now()
-                )
-                new_message = ChatMessage(body.decode('ascii'), new_mess_props,)
-
-        requeued_messages = self.rmq.channel.cancel()
-        log.info(f'Called cancel after retreive messages, result of that call is {requeued_messages}')
 
     def __persist(self):
         """Persist object data in MongoDB. First, save the user list if it isn't already there
@@ -324,6 +287,12 @@ class ChatRoom(deque):
             'create_time': f"{self.__create_time}",
             'modify_time': f"{self.__modify_time}",
             'member_list': self.member_list
+        }
+
+    def __metadata(self) -> dict:
+        return {
+            "room_name": self.room_name,
+            "room_type": self.room_type
         }
 
     def __str__(self) -> str:

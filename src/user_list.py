@@ -15,6 +15,7 @@ class UserList():
         self.__mongo_collection = self.__mongo_db.DB_USER_LIST_COLLECTION
 
         if self.__restore():
+            log(f"[*] Successfully restored")
             self.__dirty = False
         else:
             log("[*] Cannot find userlist in MongoDB. Creating new object . . .", 'w')
