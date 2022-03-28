@@ -20,7 +20,7 @@ log = Logger("chatRoom")
 class ChatRoom(deque):
     def __init__(
         self, 
-        room_name: str=RMQ_DEFAULT_PUBLIC_QUEUE,
+        room_name: str,
         room_type: int=CHAT_ROOM_TYPE_PUBLIC,
         member_list: list=[],
         owner_alias: str="",
@@ -55,7 +55,7 @@ class ChatRoom(deque):
             #   Initialize the sequence number collection in the DB if it does not already exist
             self.__mongo_seq_collection = self.__mongo_db.create_collection('sequence')
             
-        if self.__restore() is True:
+        if self.__restore():
             #   Element is restored from storage, so indicate there are no changes to be saved
             self.__dirty = False
         else:
@@ -77,7 +77,7 @@ class ChatRoom(deque):
 
     @property
     def room_type(self) -> int:
-        return self.__room
+        return self.__room_type
 
     @property
     def owner_alias(self) -> str:

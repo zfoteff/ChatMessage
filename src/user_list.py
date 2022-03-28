@@ -1,7 +1,7 @@
-from users import ChatUser
 from pymongo import MongoClient
 from bin.logger import Logger
 from bin.constants import *
+from src.users import ChatUser
 
 log = Logger("userList")
 
@@ -9,7 +9,13 @@ class UserList():
     """List of ChatUsers. Inherits from List class
     """
     def __init__(self, list_name: str=DB_DEFAULT_USER_LIST) -> None:
+        """Initialize a new UserList object
+
+        Args:
+            list_name (str, optional): ID of the user list. Defaults to DB_DEFAULT_USER_LIST.
+        """
         self.__user_list = list()
+        self.__list_name = list_name
         self.__mongo_client = MongoClient(DB_HOST, DB_PORT)
         self.__mongo_db = self.__mongo_client.detest
         self.__mongo_collection = self.__mongo_db.DB_USER_LIST_COLLECTION
@@ -20,6 +26,10 @@ class UserList():
         else:
             log("[*] Cannot find userlist in MongoDB. Creating new object . . .", 'w')
             self.__dirty = True
+
+    @property
+    def list_name(self) -> str:
+        return self.__list_name
 
     @property
     def user_list(self) -> list:
