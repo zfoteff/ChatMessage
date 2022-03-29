@@ -106,7 +106,7 @@ class ChatRoom(deque):
         for message in list(self):
             if message.dirty:
                 serialized = message.to_dict()
-                self.mongo_collection.insert_one(serialized)
+                self.__mongo_collection.insert_one(serialized)
                 message.dirty = False
 
     def __restore(self):
@@ -123,7 +123,7 @@ class ChatRoom(deque):
         """
         metadata = self.mongo_collection.find_one({'name': {'$exists': 'true'}})
         if metadata is None:
-            log("[*] No metadata found for ChatRoom object", 'w')
+            log("[*] No metadata found for ChatRoom object", 'e')
             return False
         self.__room_name = metadata['room_name']
         self.__create_time = metadata['create_time']

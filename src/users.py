@@ -9,11 +9,12 @@ from datetime import datetime
 log = Logger("users")
 
 class ChatUser():
-    """Chat room user class object. Users must register using the application to 
+    """Chat room user class object. Users must register using the application to send and recieve messages
     """
 
     def __init__(self, 
-                alias: str, user_id=None, 
+                alias: str,
+                user_id=None,
                 create_time: datetime=datetime.now(), 
                 modify_time: datetime=datetime.now()) -> None:
         """Initialize a new User object. Mark the user as dirty by default, unless the user was restored 
@@ -34,18 +35,26 @@ class ChatUser():
         else:
             self.__dirty = True
 
-        @property
-        def alias(self):
-            return self.__alias
-        
-        @property
-        def user_id(self):
-            return self.__user_id
+    @property
+    def alias(self) -> str:
+        return self.__alias
 
-        def to_dict(self):
-            return {
-                "alias": self.alias,
-                "create_time": self.__create_time,
-                "modify_time": self.__modify_time
-            }
+    @property
+    def user_id(self) -> str:
+        return self.__user_id
+
+    def to_dict(self) -> dict:
+        """Return a dictionary representation of the ChatUser object
+
+        Returns:
+            dict: Dictionary representation of object
+        """
+        return {
+            "alias": self.alias,
+            "create_time": self.__create_time,
+            "modify_time": self.__modify_time
+        }
+
+    def __str__(self) -> str:
+        return f"User (alias={self.alias}, id={self.user_id}"
 

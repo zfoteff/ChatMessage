@@ -6,12 +6,11 @@ messaging service
 __author__= "Zac Foteff"
 __version__ =  "1.0.0."
 
-from importlib.metadata import metadata
 from pymongo import MongoClient
 from datetime import datetime
 from bin.constants import *
 from bin.logger import Logger
-from chat_room import ChatRoom
+from src.chat_room import ChatRoom
 
 log = Logger()
 

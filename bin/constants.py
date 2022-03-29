@@ -5,12 +5,11 @@ __version__ = "1.0.0."
 
 #   MongoDB Constants
 DB_HOST = '34.94.157.136'
-DB_PORT = '5672'
+DB_PORT = 27017
 DB_USER = "class"
 DB_PASS = "CPSC313"
 DB_AUTH_SOURCE = "cpsc313"
-DB_NAME = ""
-DB_COLLECTION = ""
+DB_NAME = "cpsc313"
 DB_ROOM_LIST_COLLECTION = 'rooms'
 DB_USER_LIST_COLLECTION = 'users'
 DB_DEFAULT_ROOM_LIST = 'main'

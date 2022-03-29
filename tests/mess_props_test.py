@@ -27,9 +27,9 @@ class MessagePropertiesTests(unittest.TestCase):
         self.assertIsInstance(mess_prop, MessageProperties)
         self.assertEqual(mess_prop.mess_type, MESSAGE_SENT)
         self.assertEqual(mess_prop.room_name, self.TEST_ROOM)
+        elapsed_time = time.perf_counter() - start_time
         log(mess_prop, 'd')
         log(mess_prop.to_dict(), 'd')
-        elapsed_time = time.perf_counter() - start_time
         log(f"[+] Completed create single instance test in {elapsed_time:.5f}")
 
     def test_create_identical_instances(self):
