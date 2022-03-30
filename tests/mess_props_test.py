@@ -1,4 +1,4 @@
-"""Test suite for unittesting the Message Properties Class"""
+"""Test suite for unit testing the Message Properties Class"""
 
 __version__ = "1.0.0"
 __author__ = "Zac Foteff"
@@ -9,10 +9,11 @@ from bin.logger import Logger
 from bin.constants import *
 from src.message_props import MessageProperties
 
-log = Logger("./messagePropertiesTest")
+log = Logger("../logs/messagePropertiesTest")
+
 
 class MessagePropertiesTests(unittest.TestCase):
-    """Test cases for MeessageProperties class object"""
+    """Test cases for MessageProperties class object"""
 
     TEST_ROOM = "zfoteff_test"
 

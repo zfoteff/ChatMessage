@@ -1,9 +1,9 @@
 """
 API for the message chat application
-
-@author Zac Foteff
-@version 2.0.0.
 """
+
+__author__ = "Zac Foteff"
+__version__ = "2.0.0."
 
 import socket
 import time
@@ -22,6 +22,7 @@ app = FastAPI()
 log = Logger("api")
 log("[-+-] Started chat app")
 
+
 @app.get("/", status_code=200)
 async def index():
     """ Root endpoint for browser navigation to http://localhost:8000/
@@ -34,6 +35,7 @@ async def index():
     elapsed_time = time.perf_counter() - start_time
     log(f"GET / {elapsed_time} result: Success")
     return {'message': "You've hit Zac's API root endpoint"}
+
 
 @app.post("/message/", status_code=201)
 async def send_message(room_name: str, message: str, from_alias: str, to_alias: str):
@@ -58,9 +60,10 @@ async def send_message(room_name: str, message: str, from_alias: str, to_alias: 
         elapsed_time = time.perf_counter() - start_time
         log(f"POST /message/ {elapsed_time} result: Failure")
         return JSONResponse(status_code=410, content="Problem sending message")
-    
+
+
 @app.get('/messages/', status_code=201)
-async def get_messages(request: Request, alias: str, room_name: str, messages_to_get: int=GET_ALL_MESSAGES):
+async def get_messages(request: Request, alias: str, room_name: str, messages_to_get: int = GET_ALL_MESSAGES):
     """ Message retrieval endpoint for the application
 
     Args:
@@ -80,6 +83,8 @@ async def get_messages(request: Request, alias: str, room_name: str, messages_to
 """
 User routes
 """
+
+
 @app.get('/users/', status_code=200)
 async def get_users():
     """
@@ -89,7 +94,7 @@ async def get_users():
         users = UserList()
     except:
         users = UserList('chat_users')
-    
+
     if len(users.get_all_users()) > 0:
         elapsed_time = time.perf_counter() - start_time
         log(f"GET /users/ {elapsed_time} result: 200")
@@ -98,6 +103,7 @@ async def get_users():
         elapsed_time = time.perf_counter() - start_time
         log(f"GET /users/ {elapsed_time} result: 405")
         return JSONResponse(status_code=405, content="No users registered")
+
 
 @app.post('/register/user', status_code=201)
 async def register_user(user_alias: str):
@@ -118,11 +124,14 @@ async def register_user(user_alias: str):
         log(f"POST /register/user/ {elapsed_time} result: 410")
         return JSONResponse(status_code=410, content="User exists already")
 
+
 """
 Room routes
 """
+
+
 @app.post("/room", status_code=201)
-async def create_room(room_name: str, owner_alias: str, room_type: int=CHAT_ROOM_TYPE_PUBLIC):
+async def create_room(room_name: str, owner_alias: str, room_type: int = CHAT_ROOM_TYPE_PUBLIC):
     """API endpoint for creating a room
 
     Args:
@@ -142,10 +151,12 @@ async def create_room(room_name: str, owner_alias: str, room_type: int=CHAT_ROOM
     elapsed_time = time.perf_counter() - start_time
     log(f"POST /message/ {elapsed_time} result: Success")
 
+
 def main():
     ip_address = socket.gethostbyname(socket.gethostname())
     user = input("Please enter your name: ")
     log(f"[+] User {user} logged in at {ip_address}")
+
 
 if __name__ == '__main__':
     main()

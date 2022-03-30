@@ -5,8 +5,6 @@ Class for interactions with MongoDB and RabbitMQ to create a Chat Room instance
 __author__ = "Zac Foteff"
 __version__ = "1.0.0."
 
-import pika
-import pika.exceptions
 from datetime import datetime
 from pymongo import MongoClient, ReturnDocument
 from collections import deque
@@ -17,25 +15,22 @@ from bin.constants import *
 
 log = Logger("chatRoom")
 
+
 class ChatRoom(deque):
     def __init__(
-        self, 
-        room_name: str,
-        room_type: int=CHAT_ROOM_TYPE_PUBLIC,
-        member_list: list=[],
-        owner_alias: str="",
-        create_time: datetime=datetime.now(),
-        modify_time: datetime=datetime.now()):
-        """Intantiate a ChatRoom class object. All properties are created in the constructor, or
+            self,
+            room_name: str,
+            room_type: int = CHAT_ROOM_TYPE_PUBLIC,
+            owner_alias: str = "",
+            create_time: datetime = datetime.now(),
+            modify_time: datetime = datetime.now()):
+        """Instantiate a ChatRoom class object. All properties are created in the constructor, or
         restored from an existing entry in storage
-        storage
 
         Args:
             room_name (str): Room name. Default queue_name for consuming is using message queues
-            member_list (list): List of all registered members to the chatroom
             owner_alias (str): Alias of the room creator
-            room_type (int, optional): Type of room. Defaults to public
-            create_new (bool, optional): Flag indicating if the chat room exists in the database 
+            room_type (int, optional): Type of room. Defaults to CHAT_ROOM_TYPE_PUBLIC
             create_time (datetime, optional): Time that the room was created
             modify_time (datetime, optional): Last time that the room was modified
         """
@@ -54,13 +49,13 @@ class ChatRoom(deque):
         if self.__mongo_seq_collection is None:
             #   Initialize the sequence number collection in the DB if it does not already exist
             self.__mongo_seq_collection = self.__mongo_db.create_collection('sequence')
-            
+
         if self.__restore():
             #   Element is restored from storage, so indicate there are no changes to be saved
             self.__dirty = False
         else:
             #   Element has not be restored, so a new Chat room is created
-            self.__member_list = member_list
+            self.__member_list = list()
             self.__owner_alias = owner_alias
             self.__room_type = room_type
             self.__dirty = True
@@ -96,13 +91,13 @@ class ChatRoom(deque):
         or there are changes that need to be persisted. Next, for each message in the list create
         and save a document for that user
         """
-        if self.__mongo_collection.find_one({ 'room_name': { '$exists': 'false'}}) is None:
-            self.__mongo_collection._insert_one({
-                "room_name": self.room_name, 
-                "create_time": self.__create_time, 
+        if self.__mongo_collection.find_one({'room_name': {'$exists': 'false'}}) is None:
+            self.__mongo_collection.insert_one({
+                "room_name": self.room_name,
+                "create_time": self.__create_time,
                 "modify_time": self.__modify_time
-                })
-        
+            })
+
         for message in list(self):
             if message.dirty:
                 serialized = message.to_dict()
@@ -121,14 +116,14 @@ class ChatRoom(deque):
             bool: Returns True if the object and its messages were restored successfully. 
             False otherwise
         """
-        metadata = self.mongo_collection.find_one({'name': {'$exists': 'true'}})
+        metadata = self.__mongo_collection.find_one({'name': {'$exists': 'true'}})
         if metadata is None:
             log("[*] No metadata found for ChatRoom object", 'e')
             return False
         self.__room_name = metadata['room_name']
         self.__create_time = metadata['create_time']
         self.__modify_time = metadata['modify_time']
-        for mess_dict in self.mongo_collection.find({'message': {'$exists': 'true'}}):
+        for mess_dict in self.__mongo_collection.find({'message': {'$exists': 'true'}}):
             new_mess_props = MessageProperties(
                 mess_dict['mess_props']['mess_type'],
                 mess_dict['mess_props']['room_name'],
@@ -176,7 +171,7 @@ class ChatRoom(deque):
         Returns:
             bool: Returns true if the operation was completed successfully
         """
-        if (self.is_registered(alias)):
+        if self.is_registered(alias):
             #   Don't add the alias to the list if it already exists
             log("[*] User is already registered for the chat room. Cancelling operation", "w")
             return False
@@ -184,7 +179,7 @@ class ChatRoom(deque):
         self.member_list.append(alias)
         return True
 
-    def get_messages(self, num_messages: int=GET_ALL_MESSAGES, return_objects: bool=True) -> list:
+    def get_messages(self, num_messages: int = GET_ALL_MESSAGES, return_objects: bool = True) -> list:
         """Retrieve the ChatRoom's messages from storage. Also retrieves new messages from RMQ. 
         Users have the option of returning the objects as ChatMessage objects, or just the message content
 
@@ -197,24 +192,8 @@ class ChatRoom(deque):
             list: List of messages associated with the ChatRoom object and the amount of strings retreived
         """
         log(f"[*] Requested retrieval of {GET_ALL_MESSAGES} from our queue of messages")
-        self.__retrieve_messages()
         log(f"[*] Number of messages in internal queue {self.length}")
-        if num_messages == GET_ALL_MESSAGES:
-            if return_objects:
-                return list(self), self.length
-            else:
-                serialized_list = [message.to_dict() for message in list(self)]
-                return serialized_list, self.length
-        else:
-            messages = list()
-            cur_num_messages = 0
-            for message in list(self):
-                if cur_num_messages < num_messages:
-                    #   If return objects flag is raised, append ChatMessage object, otherwise append dict representation
-                    message.append(message) if return_objects else message.append(message.message)
-                    cur_num_messages += 1
-                else:
-                    return messages, cur_num_messages
+        return []
 
     def send_message(self, message: str, mess_props: MessageProperties) -> bool:
         """Send message using RMQ. Also creates local message instance that is added to internal queue
@@ -225,19 +204,9 @@ class ChatRoom(deque):
         Returns:
             bool: Return true if the message is successfully submitted to RMQ, false otherwise
         """
-        try:
-            self.rmq.channel.basic_publish(self.rmq.exchange_name, 
-                                        routing_key=self.rmq.exchange_name,
-                                        properties=pika.BasicProperties(headers=mess_props.__dict__),
-                                        body=message, mandatory=True)
-            log(f"[+] Succesfully published message to messaging server. Message: {message}")
-            self.put(ChatMessage(message, mess_props))
-            return True
-        except pika.exceptions.UnroutableError:
-            log(f"[-] Message was returned undeliverable.\n\tMessage: {message}\n\tTarget: {self.rmq.queue}")
-            return False
+        pass
 
-    def find_message(self, message_text: str) -> ChatMessage:
+    def find_message(self, message_text: str) -> ChatMessage | None:
         """Find message object in the deque using the text of the message as a key
         TODO: Transition to using unique oids
 
@@ -259,10 +228,10 @@ class ChatRoom(deque):
         """
         try:
             return super()[-1]
-        except: 
+        except:
             log("[*] No messages in ChatRoom", 'd')
 
-    def put(self, message: ChatMessage=None) -> None:
+    def put(self, message: ChatMessage = None) -> None:
         """Puts message into the dequeue. Overrides default put method to place ChatMessages
         into the left end of the deque. We choose to read from the right
 

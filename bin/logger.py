@@ -5,9 +5,10 @@ Logging helper class
 import os
 import logging as log
 
-LOG_DIR = str(os.getcwd())+"\\logs\\"
+LOG_DIR = str(os.getcwd()) + "\\logs\\"
 
-def log_setup(logger_name: str, log_file: str, mode: str='w'):
+
+def log_setup(logger_name: str, log_file: str, mode: str = 'w'):
     """
     Configure a new logger and return the new instance to the user
 
@@ -19,7 +20,7 @@ def log_setup(logger_name: str, log_file: str, mode: str='w'):
     Returns:
         log.Logger: New log file instance the user can write to
     """
-    
+
     #   Initialize handlers
     new_log = log.getLogger(logger_name)
     formatter = log.Formatter("[%(levelname)s]\t[%(asctime)s] %(message)s")
@@ -33,76 +34,76 @@ def log_setup(logger_name: str, log_file: str, mode: str='w'):
     new_log.addHandler(stream_handler)
     return new_log
 
-class Logger():
+
+class Logger:
     """Logger object that allows a user to quickly define a new instance and log results to the file"""
-    
-    def __init__(self, key: str="none"):
+
+    def __init__(self, key: str = "none"):
         """Constructor for log object. Takes a name for the file and handles the rest of the
         setup internally.
 
         Args:
             key (str, optional): Assignment/Name of the logger. Defaults to "none".
         """
-        self.log_obj = log_setup(f"{key}", LOG_DIR+f"{key}.log")
-        
-    def __call__(self, logStr: str, mode: str='i'):
+        self.log_obj = log_setup(f"{key}", LOG_DIR + f"{key}.log")
+
+    def __call__(self, log_str: str, mode: str = 'i'):
         """
-        Call the object to have a message immidiately logged to the debug output
+        Call the object to have a message immediately logged to the debug output
 
         Args:
-            logStr (str): Message to add to the logfile
+            log_str (str): Message to add to the logfile
             mode (str, optional): Logging mode for the file. Defaults to 'i' for Info
         """
         if mode == 'i':
-            self.log_obj.info(logStr)
+            self.log_obj.info(log_str)
         elif mode == 'd':
-            self.log_obj.debug(logStr)
+            self.log_obj.debug(log_str)
         elif mode == 'e':
-            self.log_obj.error(logStr)
+            self.log_obj.error(log_str)
         elif mode == 'w':
-            self.log_obj.warning(logStr)
+            self.log_obj.warning(log_str)
         else:
-            self.log_obj.info(logStr)
+            self.log_obj.info(log_str)
 
-        
-    def log(self, logStr: str):
+    def log(self, log_str: str):
         """
         Log a debug string to the specified log file
 
         Args:
-            logStr (str): String to add to logfile
+            log_str (str): String to add to logfile
         """
-        self.log_obj.debug(logStr)
-        
-    def info(self, logStr: str):
+        self.log_obj.debug(log_str)
+
+    def info(self, log_str: str):
         """
         Log an info string to the specified log file
 
         Args:
-            logStr (str): String to add to logfile
+            log_str (str): String to add to logfile
         """
-        self.log_obj.info(logStr)
+        self.log_obj.info(log_str)
 
-    def error(self, logStr: str):
+    def error(self, log_str: str):
         """Log an error string to the log file
 
         Args:
-            logStr (str): String to add to the logfile
+            log_str (str): String to add to the logfile
         """
-        self.log_obj.error(logStr)
+        self.log_obj.error(log_str)
 
-    def debug(self, logStr: str):
-        """Log an debug string to the log file
+    def debug(self, log_str: str):
+        """Log a debug string to the log file
 
         Args:
-            logStr (str): String to add to the logfile 
+            log_str (str): String to add to the logfile
         """
-        self.log_obj.debug(logStr)
+        self.log_obj.debug(log_str)
 
-    def warning(self, logStr: str):
-        """Log an warning string to the log file
+    def warning(self, log_str: str):
+        """Log a warning string to the log file
 
         Args:
-            logStr (str): String to add to the logfile 
+            log_str (str): String to add to the logfile
         """
-        self.log_obj.warning(logStr)
+        self.log_obj.warning(log_str)

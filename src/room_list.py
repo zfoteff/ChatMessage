@@ -3,8 +3,8 @@ Room list dequeue implementation for managing declared channels on the
 messaging service
 """
 
-__author__= "Zac Foteff"
-__version__ =  "1.0.0."
+__author__ = "Zac Foteff"
+__version__ = "1.0.0."
 
 from pymongo import MongoClient
 from datetime import datetime
@@ -14,11 +14,13 @@ from src.chat_room import ChatRoom
 
 log = Logger()
 
+
 class RoomList:
     """
     RoomList object class that stores all declared ChatRoom instances 
     """
-    def __init__(self, room_id: str=DEFAULT_ROOM_LIST_ID) -> None:
+
+    def __init__(self, room_id: str = DEFAULT_ROOM_LIST_ID) -> None:
         """
         Stores rooms in a list of dict of with the room name acting as 
         the key and the ChatRoom instance and a dirty flag as values. Should ensure 
@@ -33,7 +35,7 @@ class RoomList:
         if self.__mongo_collection is None:
             #   Initialize the chat queue collection in the DB if it does not already exist
             self.__mongo_collection = self.__mongo_db.create_collection("room_list")
-        
+
         if self.__restore(room_id):
             self.__dirty = False
         else:
@@ -42,7 +44,7 @@ class RoomList:
             self.__dirty = True
             self.__create_time = datetime.now()
             self.__modify_time = datetime.now()
-        
+
     @property
     def room_id(self) -> str:
         return self.__room_id
@@ -58,7 +60,7 @@ class RoomList:
     @property
     def length(self) -> int:
         return len(self.__room_list)
-        
+
     def __persist(self) -> bool:
         """Persist a RoomList instance in  MongoDB. Create document using the ChatRoom instance room name
         as a key, then restore the ChatRoom instances that are declared for this instance of the application. Uses
@@ -69,7 +71,7 @@ class RoomList:
         """
         if self.dirty:
             log(f"[*] Persisting {self} to MongoDB")
-            new_values = { 
+            new_values = {
                 "$set": {
                     "room_id": self.room_id,
                     "room_list": self.room_list,
@@ -77,15 +79,15 @@ class RoomList:
                     "modify_time": self.__modify_time
                 }}
             self.__mongo_collection.update_one(
-                {'room_id': self.room_id}, 
-                new_values, 
+                {'room_id': self.room_id},
+                new_values,
                 upsert=True)
             log(f"[+] Persisted {self} to MongoDB")
             return True
         else:
             log("[-] Room List is not flagged as dirty, but persist was called. Cancelling operation . . .", 'w')
             return False
-    
+
     def __restore(self, room_id: str) -> bool:
         """Restore a RoomList instance from  MongoDB
         Args:
@@ -94,11 +96,7 @@ class RoomList:
             bool: Return true if RoomList object is restored successfully from the DB
         """
         pass
-    
-    @property
-    def room_list(self) -> dict:
-        return self.__room_list
-    
+
     def is_room_declared(self, room_name: str) -> bool:
         """
         Check if room is declared in the room list
@@ -109,7 +107,7 @@ class RoomList:
             bool: Return true if the room is declared in the room list
         """
         log(f"[*] Starting search for room {room_name} in declared chat rooms")
-        if (self.length == 0):
+        if self.length == 0:
             log("[*] No rooms are declared. Cancelling operation . . .")
             return False
 
@@ -117,10 +115,10 @@ class RoomList:
             if room_metadata['room_name'] == room_name:
                 log(f"[+] Found room {room_name} in declared chat rooms")
                 return True
-        
+
         log(f"[-] Could not find room {room_name} in declared chat rooms")
         return False
-        
+
     def add(self, new_room: ChatRoom) -> bool:
         """
         Declare a new room to the room list
@@ -138,10 +136,10 @@ class RoomList:
             self.room_list[new_room.room_name] = new_room
             log(f"[+] Added room {new_room.room_name} to roomlist {new_room}")
             self.room_list[new_room.room_name].dirty = True
-            self.dirty = True
+            self.__dirty = True
             self.__persist()
             return True
-        
+
     def remove(self, room_name: str) -> bool:
         """Remove a declared ChatRoom from the room list
 
@@ -152,14 +150,14 @@ class RoomList:
             roomlist, false otherwise
         """
         if self.is_room_declared(room_name):
-            self.room_list.pop(room_name)
-            log(f"[-] Removed room {room_name} from roomlist")
+            self.room_list.remove(room_name)
+            log(f"[-] Removed room {room_name} from room list")
             return True
         else:
-            log("[*] Room is not declared in roomlist")
+            log("[*] Room is not declared in room list")
             return False
-        
-    def find(self, room_name: str) -> ChatRoom:
+
+    def find(self, room_name: str) -> ChatRoom | None:
         """
         Find a room in the room list and return it
 
@@ -172,10 +170,10 @@ class RoomList:
         if room_name in self.room_list:
             return self.room_list[room_name]
         else:
-            log("[*] Room is not declared in roomlist")
+            log("[*] Room is not declared in room list")
             return None
 
-    def to_dict(self) -> str:
+    def to_dict(self) -> dict:
         return {
             "room_id": self.room_id,
             "room_list": self.room_list,
@@ -190,4 +188,3 @@ class RoomList:
             room_list += chat_room.room_name + " "
         result = f"Room List({room_list})"
         return result
-

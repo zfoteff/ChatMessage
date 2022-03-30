@@ -12,6 +12,7 @@ from src.message_props import MessageProperties
 
 log = Logger("./chatMessageTest")
 
+
 class ChatMessageTests(unittest.TestCase):
     """Test cases for ChatMessage class object"""
 
@@ -28,7 +29,8 @@ class ChatMessageTests(unittest.TestCase):
         Depends on a MessageProperties object being instantiated
         """
         start_time = time.perf_counter()
-        mess_prop = MessageProperties(0, 1, self.TEST_MESSAGE_TYPE, self.TEST_ROOM, "Zac in the future", "Zac in the past")
+        mess_prop = MessageProperties(0, 1, self.TEST_MESSAGE_TYPE, self.TEST_ROOM, "Zac in the future",
+                                      "Zac in the past")
         chat_mess = ChatMessage(self.TEST_MESSAGE, mess_prop)
         self.assertIsNotNone(mess_prop)
         self.assertIsNotNone(chat_mess)

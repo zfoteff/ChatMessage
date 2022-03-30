@@ -12,6 +12,7 @@ from src.user_list import UserList
 
 log = Logger("./userListTest")
 
+
 class UserListTests(unittest.TestCase):
     """Test cases for UserList class object alone"""
 
@@ -40,6 +41,7 @@ class UserListTests(unittest.TestCase):
         self.assertIsInstance(user_list, UserList)
         elapsed_time = time.perf_counter() - start_time
         log(f"[+] Completed create single instance test in {elapsed_time:.5f}")
+
 
 class UserListWithChatUserTest(unittest.TestCase):
     """Test cases for UserList class object with ChatUser objects"""

@@ -67,12 +67,22 @@ class MessagesTestCases(unittest.TestCase):
     def setUp(self) -> None:
         self.client = TestClient(app)
 
-    def test_recieve_from_empty_room(self) -> None:
+    def test_recieve_from_room(self) -> None:
+        """Assert that the endpoint handles consuming from an ChatRoom"""
+        start_time = time.perf_counter()
+
+        elapsed_time = time.perf_counter() - start_time
+        log(f"Completed send message route test in {elapsed_time:.5f}")
+
+class RegisterUserTestCases(unittest.TestCase):
+    """Test suite for registering a user to the application user list"""
+
+    def setUp(self) -> None:
+        self.client = TestClient(app)
+
+    def test_register_user(self):
         """Assert that the endpoint handles consuming from an empty RMQ"""
         start_time = time.perf_counter()
-        response = self.client.get(URL)
-        response_mesage = response.json()
-        self.assertEqual(response.status_code, self.SEND_SUCCESS_CODE)
-        self.assertEqual(response_mesage["result"], "ENQUEUED")
+
         elapsed_time = time.perf_counter() - start_time
         log(f"Completed send message route test in {elapsed_time:.5f}")

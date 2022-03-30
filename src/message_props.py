@@ -9,35 +9,35 @@ __author__ = "Zac Foteff"
 
 from datetime import datetime
 from bin.logger import Logger
-from bin.constants import *
 
 logger = Logger("messageProperties")
+
 
 class MessageProperties:
     """
     MessageProperties class object
     """
+
     def __init__(self,
-                mess_type: int, 
-                room_name: str, 
-                to_user: str, 
-                from_user: str,
-                sequence_num: int=-1,
-                sent_time: datetime=datetime.now(),
-                rec_time: datetime=None):
+                 mess_type: int,
+                 room_name: str,
+                 to_user: str,
+                 from_user: str,
+                 sequence_num: int = -1,
+                 sent_time: datetime = datetime.now(),
+                 rec_time: datetime = None):
         """Instantiate a new MessageProperties class object. The object encapsulates
         all the properties of messages that are sent using the chat application API
 
         Args:
-            id (int): Unique identifier of the message
             mess_type (str): Type of the message. Defaults to recieved
             room_name (str): Name of the room that the message is sent in
             to_user (str): Alias of the user the message should be sent to
             from_user (str): Alias of the user who sent the message
-            sequence_number (int, optional): Location of the message in the sequence of messages that exist in the 
+            sequence_num (int, optional): Location of the message in the sequence of messages that exist in the
             room. Defaults to -1
-            sent_time (datetime, optional): Time the message was recieved by the system. Defaults to the current time
-            rec_time (datetime, optional): Time the message was recieved by the system. Defaults to None
+            sent_time (datetime, optional): Time the message was received by the system. Defaults to the current time
+            rec_time (datetime, optional): Time the message was received by the system. Defaults to None
         """
         self.__mess_type = mess_type
         self.__room_name = room_name
@@ -46,7 +46,7 @@ class MessageProperties:
         self.__sequence_num = sequence_num
         self.__sent_time = sent_time
         self.__rec_time = rec_time
-    
+
     @property
     def room_name(self) -> str:
         return self.__room_name
@@ -94,5 +94,5 @@ class MessageProperties:
 
     def __str__(self) -> str:
         return (f"\nMessage properties"
-               +f"\n\tRoom: {self.room_name} Type: {self.mess_type} Sequence Number: {self.sequence_num}"
-               +f"\n\tSender: {self.from_user} | {self.sent_time}\n\tReceiever: {self.to_user} | {self.rec_time}")
+                + f"\n\tRoom: {self.room_name} Type: {self.mess_type} Sequence Number: {self.sequence_num}"
+                + f"\n\tSender: {self.from_user} | {self.sent_time}\n\tReceiever: {self.to_user} | {self.rec_time}")
