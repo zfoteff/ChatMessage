@@ -36,21 +36,19 @@ class SendTestCases(unittest.TestCase):
     TEST_MESSAGE = "TEST MESSAGE FOR CONSUMPTION"
     TEST_FROM_ALIAS = "t1"
     TEST_TO_ALIAS = "t2"
-    QUERY_STRING = f"?room_name={TEST_ROOM}&message={TEST_MESSAGE}&from_alias={TEST_FROM_ALIAS}&to_alias={TEST_TO_ALIAS}"
-    SEND_ROUTE = "/send/"
-    SEND_SUCCESS_CODE = 200
-    SEND_SUCCESS_MESSAGE = "ENQUEUED"
+    QUERY_STRING = f"?message={TEST_MESSAGE}&room_name={TEST_ROOM}&from_alias={TEST_FROM_ALIAS}&to_alias={TEST_TO_ALIAS}"
+    SEND_ROUTE = "/message/"
+    SEND_SUCCESS_CODE = 201
+    SEND_SUCCESS_MESSAGE = "Enqueued message"
 
     def setUp(self) -> None:
         self.client = TestClient(app)
 
     def test_send_single_message(self) -> None:
         start_time = time.perf_counter()
-        response = self.client.get(URL+self.SEND_ROUTE+self.QUERY_STRING)
-        response_message = response.json()
-        print (response_message)
+        response = self.client.post(self.SEND_ROUTE+self.QUERY_STRING)
         self.assertEqual(response.status_code, self.SEND_SUCCESS_CODE)
-        self.assertEqual(response_message["result"], "ENQUEUED")
+        self.assertEqual(response.json(), self.SEND_SUCCESS_MESSAGE)
         elapsed_time = time.perf_counter() - start_time
         log(f"Completed send message route test in {elapsed_time:.5f}")
 

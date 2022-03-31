@@ -24,6 +24,14 @@ class APITests(unittest.TestCase):
         letters = string.ascii_lowercase
         return ''.join(random.choice(letters) for i in range(length))
 
+    def test_get_root(self):
+        start_time = time.perf_counter()
+        response = self.client.get('/')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), "You've hit Zac's root endpoint!")
+        elapsed_time = time.perf_counter() - start_time
+        log(f"[+] Completed get root test in {elapsed_time:.5f}")
+
     def test_create_room_route(self):
         start_time = time.perf_counter()
         new_room_name = self.generate_random_string(5)
@@ -84,4 +92,13 @@ class APITests(unittest.TestCase):
         log(f"[+] Completed register user, then get user test in {elapsed_time:.5f}")
 
     def test_send_then_get(self):
-        pass
+        start_time = time.perf_counter()
+        send_message_query_string = f"?room_name={ROOM_NAME}&message={TEST_MESSAGE}&from_alias={FROM_ALIAS}&to_alias={TO_ALIAS}"
+        send_response = self.client.post("/message/"+send_message_query_string)
+        get_message_query_string = f"?alias={TO_ALIAS}&room_name={ROOM_NAME}"
+        get_response = self.client.get("/messages/"+get_message_query_string)
+        self.assertEqual(send_response.status_code, 201)
+        self.assertEqual(get_response.status_code, 200)
+        self.assertIn(TEST_MESSAGE, get_response.json())
+        elapsed_time = time.perf_counter() - start_time
+        log(f"[+] Completed send, then get test in {elapsed_time}")

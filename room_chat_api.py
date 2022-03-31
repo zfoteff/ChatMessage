@@ -30,7 +30,7 @@ async def index():
     start_time = time.perf_counter()
     elapsed_time = time.perf_counter() - start_time
     log(f"GET / {elapsed_time} result: Success")
-    return {'message': "You've hit Zac's API root endpoint"}
+    return JSONResponse(status_code=200, content="You've hit Zac's root endpoint!")
 
 
 @app.post("/message/", status_code=201)
