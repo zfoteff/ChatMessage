@@ -31,7 +31,7 @@ class UserListTests(unittest.TestCase):
             self.assertTrue(True)
         except:
             elapsed_time = time.perf_counter() - start_time
-            log(f"[-] MongoDB is not connected {elapsed_time}")
+            log(f"[-] MongoDB is not connected {elapsed_time:.5f}")
             self.fail()
 
     def test_create_single_instance(self):
@@ -55,5 +55,15 @@ class UserListWithChatUserTest(unittest.TestCase):
         start_time = time.perf_counter()
         user_list = UserList()
         user_list.register(new_alias=self.TEST_USER_ALIAS)
-        elapsed_time = time.perf_counter - start_time
-        log("[+] Completed register single user to user list")
+        self.assertIn(self.TEST_USER_ALIAS, user_list.get_all_users())
+        elapsed_time = time.perf_counter() - start_time
+        log(f"[+] Completed register single user to user list in {elapsed_time:.5f}")
+
+    def test_get_user(self):
+        start_time = time.perf_counter()
+        user_list = UserList()
+        user = user_list.get(self.TEST_USER_ALIAS)
+        self.assertIsNotNone(user)
+        self.assertIsInstance(user, ChatUser)
+        elapsed_time = time.perf_counter() - start_time
+        log(f"[+] Completed get user test in {elapsed_time:.5f}")

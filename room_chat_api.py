@@ -5,15 +5,11 @@ API for the message chat application
 __author__ = "Zac Foteff"
 __version__ = "2.0.0."
 
-import socket
 import time
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse, Response
 from src.chat_room import ChatRoom
-from src.message_props import MessageProperties
 from src.room_list import RoomList
-from src.chat_message import ChatMessage
-from src.users import ChatUser
 from src.user_list import UserList
 from bin.constants import *
 from bin.logger import Logger
@@ -54,10 +50,10 @@ async def send_message(room_name: str, message: str, from_alias: str, to_alias: 
     chat_room.send_message(message=message, room_name=room_name, from_alias=from_alias, to_alias=to_alias)
     elapsed_time = time.perf_counter() - start_time
     log(f"POST /message/ {elapsed_time} result: Success")
-    return JSONResponse(status_code=201, content='Enqeued message')
+    return JSONResponse(status_code=201, content='Enqueued message')
 
 
-@app.get('/messages/', status_code=201)
+@app.get('/messages/', status_code=200)
 async def get_messages(request: Request, alias: str, room_name: str, messages_to_get: int = GET_ALL_MESSAGES):
     """ Message retrieval endpoint for the application
 
@@ -81,15 +77,11 @@ async def get_messages(request: Request, alias: str, room_name: str, messages_to
 User routes
 """
 @app.get('/users/', status_code=200)
-async def get_users():
+async def get_users(list_name: str=DB_DEFAULT_USER_LIST):
     """
     """
     start_time = time.perf_counter()
-    try:
-        users = UserList()
-    except:
-        users = UserList('chat_users')
-
+    users = UserList(list_name=list_name)
     if len(users.get_all_users()) > 0:
         elapsed_time = time.perf_counter() - start_time
         log(f"GET /users/ {elapsed_time} result: 200")
@@ -99,7 +91,7 @@ async def get_users():
         log(f"GET /users/ {elapsed_time} result: 405")
         return JSONResponse(status_code=405, content="No users registered")
 
-@app.post('/register/user', status_code=201)
+@app.post('/register/user/', status_code=201)
 async def register_user(user_alias: str):
     """Register a new user to to the User List
     """
