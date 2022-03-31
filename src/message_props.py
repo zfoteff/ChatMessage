@@ -83,13 +83,13 @@ class MessageProperties:
             dict: Dictionary representation of the MessageProperty object
         """
         return {
+            "room_name": self.room_name,
             "mess_type": self.mess_type,
-            "sequence_num": self.sequence_num,
-            "room_name": f"{self.room_name}",
-            "from_user": f"{self.from_user}",
+            "to_user": self.to_user,
+            "from_user": self.from_user,
             "sent_time": f"{self.sent_time}",
-            "to_user": f"{self.to_user}",
             "rec_time": f"{self.rec_time}",
+            "sequence_num": self.sequence_num,
         }
 
     def __str__(self) -> str:

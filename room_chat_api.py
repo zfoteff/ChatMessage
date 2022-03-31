@@ -50,7 +50,7 @@ async def send_message(room_name: str, message: str, from_alias: str, to_alias: 
         JSONResponse: status of sent message user can view in the browser
     """
     start_time = time.perf_counter()
-    chat_room = ChatRoom(room_name=room_name, exchange_name=room_name)
+    chat_room = ChatRoom(room_name=room_name)
     mess_props = MessageProperties(MESSAGE_SENT, room_name, to_alias, from_alias)
     if chat_room.send_message(message=message, mess_props=mess_props) is True:
         elapsed_time = time.perf_counter() - start_time
@@ -76,6 +76,7 @@ async def get_messages(request: Request, alias: str, room_name: str, messages_to
     """
     log(f"Attempting to send messages to chat room {room_name} . . .")
     start_time = time.perf_counter()
+    chat_room = ChatRoom(room_name=room_name)
     elapsed_time = time.perf_counter() - start_time
     log(f"GET /messages/ {elapsed_time} result: Success")
 
@@ -83,8 +84,6 @@ async def get_messages(request: Request, alias: str, room_name: str, messages_to
 """
 User routes
 """
-
-
 @app.get('/users/', status_code=200)
 async def get_users():
     """
@@ -104,33 +103,22 @@ async def get_users():
         log(f"GET /users/ {elapsed_time} result: 405")
         return JSONResponse(status_code=405, content="No users registered")
 
-
 @app.post('/register/user', status_code=201)
 async def register_user(user_alias: str):
     """Register a new user to to the User List
     """
     start_time = time.perf_counter()
-    try:
-        users = UserList()
-    except:
-        users = UserList('chat_users')
-
-    if users.register(user_alias) is True:
-        elapsed_time = time.perf_counter() - start_time
-        log(f"POST /register/user/ {elapsed_time} result: 201")
-        return JSONResponse(status_code=201, content="Success")
-    else:
-        elapsed_time = time.perf_counter() - start_time
-        log(f"POST /register/user/ {elapsed_time} result: 410")
-        return JSONResponse(status_code=410, content="User exists already")
-
+    users = UserList()
+    users.register(user_alias)
+    elapsed_time = time.perf_counter() - start_time
+    users.register(new_alias=user_alias)
+    log(f"POST /register/user/ {elapsed_time} result: 201")
+    return JSONResponse(status_code=201, content="Success")
 
 """
 Room routes
 """
-
-
-@app.post("/room", status_code=201)
+@app.post("/room/", status_code=201)
 async def create_room(room_name: str, owner_alias: str, room_type: int = CHAT_ROOM_TYPE_PUBLIC):
     """API endpoint for creating a room
 
@@ -141,16 +129,16 @@ async def create_room(room_name: str, owner_alias: str, room_type: int = CHAT_RO
     """
     start_time = time.perf_counter()
     log(f"Creating a new room with the name {room_name}")
-    try:
-        room_list = RoomList()
-    except:
-        room_list = RoomList('owner_alias')
-
+    room_list = RoomList()
     new_room = ChatRoom(room_name=room_name, room_type=room_type, owner_alias=owner_alias)
-    room_list.add(new_room)
-    elapsed_time = time.perf_counter() - start_time
-    log(f"POST /message/ {elapsed_time} result: Success")
-
+    if room_list.add(new_room):
+        elapsed_time = time.perf_counter() - start_time
+        log(f"POST /room/{room_name}/{owner_alias}/{room_type} {elapsed_time} result: Success")
+        return JSONResponse(status_code=201, content="Successfully created new room")
+    else:
+        elapsed_time = time.perf_counter() - start_time
+        log(f"POST /room/{room_name}/{owner_alias}/{room_type} {elapsed_time} result: Room already exists")
+        return JSONResponse(status_code=405, content="Room not created")
 
 def main():
     ip_address = socket.gethostbyname(socket.gethostname())

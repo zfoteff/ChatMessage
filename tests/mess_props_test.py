@@ -9,7 +9,7 @@ from bin.logger import Logger
 from bin.constants import *
 from src.message_props import MessageProperties
 
-log = Logger("../logs/messagePropertiesTest")
+log = Logger("./messagePropertiesTest")
 
 
 class MessagePropertiesTests(unittest.TestCase):

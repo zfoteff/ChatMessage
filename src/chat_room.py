@@ -36,38 +36,37 @@ class ChatRoom(deque):
         """
         super(ChatRoom, self).__init__()
         self.__room_name = room_name
+        self.__member_list = list()
+        self.__owner_alias = owner_alias
+        self.__room_type = room_type
+        self.__dirty = True
+        self.__create_time = create_time
+        self.__modify_time = modify_time
 
         #   Initialize MongoDB resources
         self.__mongo_client = MongoClient(DB_HOST, DB_PORT)
-        self.__mongo_db = self.__mongo_client.gufoteff
+        self.__mongo_db = self.__mongo_client.cpsc313
         self.__mongo_collection = self.__mongo_db.get_collection(room_name)
         if self.__mongo_collection is None:
             #   Initialize the chat queue collection in the DB if it does not already exist
             self.__mongo_collection = self.__mongo_db.create_collection(room_name)
-
+            
         self.__mongo_seq_collection = self.__mongo_db.get_collection('sequence')
         if self.__mongo_seq_collection is None:
             #   Initialize the sequence number collection in the DB if it does not already exist
+            log("[-] No sequence collection in the database. Creating")
             self.__mongo_seq_collection = self.__mongo_db.create_collection('sequence')
 
         if self.__restore():
             #   Element is restored from storage, so indicate there are no changes to be saved
             self.__dirty = False
-        else:
-            #   Element has not be restored, so a new Chat room is created
-            self.__member_list = list()
-            self.__owner_alias = owner_alias
-            self.__room_type = room_type
-            self.__dirty = True
-            self.__create_time = create_time
-            self.__modify_time = modify_time
 
     @property
-    def room_name(self):
+    def room_name(self) -> str:
         return self.__room_name
 
     @property
-    def dirty(self):
+    def dirty(self) -> bool:
         return self.__dirty
 
     @property
@@ -79,32 +78,29 @@ class ChatRoom(deque):
         return self.__owner_alias
 
     @property
-    def member_list(self):
+    def member_list(self) -> list:
         return self.__member_list
 
     @property
     def length(self) -> int:
         return len(self)
 
-    def __persist(self):
+    def __persist(self) -> None:
         """Persist object data in MongoDB. First, save the user list if it isn't already there
         or there are changes that need to be persisted. Next, for each message in the list create
         and save a document for that user
         """
         if self.__mongo_collection.find_one({'room_name': {'$exists': 'false'}}) is None:
-            self.__mongo_collection.insert_one({
-                "room_name": self.room_name,
-                "create_time": self.__create_time,
-                "modify_time": self.__modify_time
-            })
+            filter = {'room_name': self.room_name}
+            new_values = {"$set": self.to_dict()}
+            self.__mongo_collection.update_one(filter, new_values, upsert=True)
 
         for message in list(self):
-            if message.dirty:
-                serialized = message.to_dict()
-                self.__mongo_collection.insert_one(serialized)
-                message.dirty = False
+            filter = {'message': message.message}
+            new_values = {"$set": message.to_dict()}
+            self.__mongo_collection.update_one(filter, new_values, upsert=True)
 
-    def __restore(self):
+    def __restore(self) -> bool:
         """Restore object data from MongoDB. Find record using the room name as a key and
         populate name, create, and modify time.
         Next, retrieve that messages associated with the chat room (every document with 
@@ -116,23 +112,24 @@ class ChatRoom(deque):
             bool: Returns True if the object and its messages were restored successfully. 
             False otherwise
         """
-        metadata = self.__mongo_collection.find_one({'name': {'$exists': 'true'}})
+        metadata = self.__mongo_collection.find_one({'room_name': {'$exists': 'true'}})
         if metadata is None:
             log("[*] No metadata found for ChatRoom object", 'e')
+            self.__persist()
             return False
         self.__room_name = metadata['room_name']
         self.__create_time = metadata['create_time']
         self.__modify_time = metadata['modify_time']
-        for mess_dict in self.__mongo_collection.find({'message': {'$exists': 'true'}}):
+        for mess_data in self.__mongo_collection.find({'message': {'$exists': 'true'}}):
             new_mess_props = MessageProperties(
-                mess_dict['mess_props']['mess_type'],
-                mess_dict['mess_props']['room_name'],
-                mess_dict['mess_props']['to_user'],
-                mess_dict['mess_props']['from_user'],
-                mess_dict['mess_props']['sequence_num'],
-                mess_dict['mess_props']['sent_time'],
-                mess_dict['mess_props']['rec_time'])
-            new_message = ChatMessage(mess_dict['message'], new_mess_props, dirty=False)
+                mess_data['mess_props']['mess_type'],
+                mess_data['mess_props']['room_name'],
+                mess_data['mess_props']['to_user'],
+                mess_data['mess_props']['from_user'],
+                mess_data['mess_props']['sequence_num'],
+                mess_data['mess_props']['sent_time'],
+                mess_data['mess_props']['rec_time'])
+            new_message = ChatMessage(mess_data['message'], new_mess_props)
             self.put(new_message)
         return True
 
@@ -151,19 +148,19 @@ class ChatRoom(deque):
             return_document=ReturnDocument.AFTER)
         return sequence_num
 
-    def is_registered(self, username: str) -> bool:
-        """Check if the inputted username is registered to the ChatRoom
+    def is_registered(self, alias: str) -> bool:
+        """Check if the alias is registered to the ChatRoom
 
         Args:
-            username (str): Name to check the existance of
+            alias (str): Name to check the existence of
         Returns:
             bool: Return true if the name exists in the member list, false otherwise
         """
-        return username in self.member_list
+        return alias in self.member_list
 
-    def add_group_member(self, alias) -> bool:
+    def add_group_member(self, alias: str) -> bool:
         """Register new user to the room's whitelist. Takes an alias and returns True if
-        the user isn't registered to the room and they were successfully added. Will return False
+        the user isn't registered to the room, and they were successfully added. Will return False
         if the user was already registered in the room, or an error prevents them from being added
 
         Args:
@@ -177,6 +174,8 @@ class ChatRoom(deque):
             return False
 
         self.member_list.append(alias)
+        self.__modify_time = datetime.now()
+        self.__persist()
         return True
 
     def get_messages(self, num_messages: int = GET_ALL_MESSAGES, return_objects: bool = True) -> list:
@@ -189,14 +188,23 @@ class ChatRoom(deque):
             objects, or strings. Defaults to True (ChatMessage objects).
 
         Returns:
-            list: List of messages associated with the ChatRoom object and the amount of strings retreived
+            list: List of messages associated with the ChatRoom object and the amount of strings retrieved
         """
         log(f"[*] Requested retrieval of {GET_ALL_MESSAGES} from our queue of messages")
         log(f"[*] Number of messages in internal queue {self.length}")
-        return []
 
-    def send_message(self, message: str, mess_props: MessageProperties) -> bool:
-        """Send message using RMQ. Also creates local message instance that is added to internal queue
+        if num_messages == GET_ALL_MESSAGES or num_messages > self.length:
+            return [message.message for message in list(self)]
+        else:
+            message_container = []
+            for message_iterator in range(0, num_messages):
+                message = list(self)[message_iterator]
+                message_container.append(message.message)
+            return message_container
+
+
+    def send_message(self, message: str, mess_props: MessageProperties) -> None:
+        """Insert message into the message list for the room, and create a mongodb document for the message
 
         Args:
             message (str): Message to send to the chat application
@@ -204,7 +212,8 @@ class ChatRoom(deque):
         Returns:
             bool: Return true if the message is successfully submitted to RMQ, false otherwise
         """
-        pass
+        new_message = ChatMessage(message=message, mess_props=mess_props)
+        self.put(new_message)
 
     def find_message(self, message_text: str) -> ChatMessage | None:
         """Find message object in the deque using the text of the message as a key
@@ -215,7 +224,7 @@ class ChatRoom(deque):
         Returns:
             ChatMessage: _description_
         """
-        for chat_message in deque:
+        for chat_message in list(self):
             if chat_message.message == message_text:
                 return chat_message
         return None
@@ -238,10 +247,29 @@ class ChatRoom(deque):
         Args:
             message (ChatMessage): _description_
         """
-        log("[*] Put message: {message}")
+        log(f"[*] Put message: {message}", 'd')
         if message is not None:
             super().appendleft(message)
+            self.__modify_time = datetime.now()
             self.__persist()
+
+    def metadata(self) -> dict:
+        """Custom method to return metadata. This method is used by ther room_list to store 
+        metadata in its internal room list. Metadata is composed of the
+        * Room name
+        * Room type
+        * Owner alias
+        * Member_list
+
+        Returns:
+            dict: Metadata for the specific object
+        """
+        return {
+            'room_name': self.__room_name,
+            'owner_alias': self.__owner_alias,
+            'room_type': self.__room_type,
+            'member_list': self.__member_list
+        }
 
     def to_dict(self) -> dict:
         """Custom to_dict method for ChatRoom objects. The custom approach is designed
@@ -251,17 +279,12 @@ class ChatRoom(deque):
             dict: Dictionary representation of the ChatRoom object
         """
         return {
-            'room_name': f"{self.room_name}",
-            'room_type': f"{self.room_type}",
+            'room_name': self.__room_name,
+            'owner_alias': self.__owner_alias,
+            'room_type': self.__room_type,
+            'member_list': self.__member_list,
             'create_time': f"{self.__create_time}",
-            'modify_time': f"{self.__modify_time}",
-            'member_list': self.member_list
-        }
-
-    def __metadata(self) -> dict:
-        return {
-            "room_name": self.room_name,
-            "room_type": self.room_type
+            'modify_time': f"{self.__modify_time}"
         }
 
     def __str__(self) -> str:

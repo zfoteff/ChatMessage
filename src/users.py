@@ -64,4 +64,4 @@ class ChatUser:
         }
 
     def __str__(self) -> str:
-        return f"User (alias={self.alias}, id={self.user_id}"
+        return f"User (alias={self.alias}, id={self.user_id})"

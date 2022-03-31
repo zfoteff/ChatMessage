@@ -1,3 +1,9 @@
+"""UserList class object"""
+
+__version__ = "1.0.0."
+__author__ = "Zac Foteff"
+
+from datetime import datetime
 from pymongo import MongoClient
 from bin.logger import Logger
 from bin.constants import *
@@ -11,23 +17,26 @@ class UserList:
     """
 
     def __init__(self, list_name: str = DB_DEFAULT_USER_LIST) -> None:
-        """Initialize a new UserList object
+        """Initialize a new UserList object.
+        NOTE: Depends on the ChatUser object as a dependancy
 
         Args:
             list_name (str, optional): ID of the user list. Defaults to DB_DEFAULT_USER_LIST.
         """
-        self.__user_list = list()
         self.__list_name = list_name
+        self.__user_list = list()
+        self.__dirty = True
         self.__mongo_client = MongoClient(DB_HOST, DB_PORT)
         self.__mongo_db = self.__mongo_client.cpsc313
         self.__mongo_collection = self.__mongo_db.users
+        self.__create_time = datetime.now()
+        self.__modify_time = datetime.now()
 
         if self.__restore():
             log(f"[*] Successfully restored user list from MongoDB collection")
             self.__dirty = False
         else:
             log("[*] Cannot find user list in MongoDB. Creating new object . . .", 'w')
-            self.__dirty = True
 
     @property
     def list_name(self) -> str:
@@ -38,25 +47,29 @@ class UserList:
         return self.__user_list
 
     @property
+    def dirty(self) -> bool:
+        return self.__dirty
+
+    @property
     def _mongo_client(self):
+        """Protected propety for testing"""
         return self.__mongo_client
 
     def __persist(self) -> None:
         """ First save a document that describes the user list (name of list, create and modify times)
         Second, for each user in the list create and save a document for that user
         """
-        if self.__mongo_collection.find_one({'list_name': {'$exists': 'false'}}) is None:
-            self.__mongo_collection.insert_one({
-                'list_name': self.list_name,
-                'create_time': self.__create_time,
-                'modify_time': self.__modify_time
-            })
+        if self.__mongo_collection.find_one({'list_name': {'$exists': 'true'}}):
+            filter = {'list_name': self.list_name}
+            new_values = {"$set": self.to_dict()}
+            self.__mongo_collection.update_one(filter, new_values, upsert=True)
+            log("[+] Saved user list metadata to MongoDB")
 
         for user in self.user_list:
-            if user.dirty:
-                serialized = user.to_dict()
-                self.__mongo_collection.insert_one(serialized)
-                user.dirty = False
+            filter = {'alias': user.alias}
+            new_values = {"$set": user.to_dict()}
+            self.__mongo_collection.update_one(filter, new_values, upsert=True)
+        log("[+] Saved all users to user list collection")
 
     def __restore(self) -> bool:
         """ First get the document for the queue itself, then get all documents that are not the queue metadata
@@ -68,9 +81,9 @@ class UserList:
         self.__list_name = metadata['list_name']
         self.__create_time = metadata['create_time']
         self.__modify_time = metadata['modify_time']
-        self.__user_list = list()
         for user_dict in self.__mongo_collection.find({'alias': {'$exists': 'true'}}):
             self.__user_list.append(ChatUser(alias=user_dict['alias'], user_id=user_dict['_id']))
+        log("[+] Restored all users to the user list")
         return True
 
     def register(self, new_alias: str) -> None:
@@ -89,8 +102,9 @@ class UserList:
 
         new_user = ChatUser(new_alias)
         self.__user_list.append(new_user)
+        self.__modify_time = datetime.now()
         self.__persist()
-        log(f"[+] User {new_user} registered to user list {self.list_name}")
+        log(f"[+] {new_user} registered to user list {self.list_name}")
 
     def get(self, target_alias: str) -> ChatUser | None:
         """Find a user using their alias in the UserList. Should 
@@ -113,7 +127,8 @@ class UserList:
     def to_dict(self) -> dict:
         return {
             "list_name": self.list_name,
-            "members": self.user_list
+            "create_time": f"{self.__create_time}",
+            "modify_time": f"{self.__modify_time}"
         }
 
     def __str__(self) -> str:
