@@ -17,6 +17,7 @@ log = Logger("chatRoom")
 
 
 class ChatRoom(deque):
+
     def __init__(
             self,
             room_name: str,
@@ -143,7 +144,7 @@ class ChatRoom(deque):
         sequence_num = self.__mongo_seq_collection.find_one_and_update(
             {'_id': 'userid'},
             {'$inc': {self.room_name: 1}},
-            project={self.room_name: True, '_id': False},
+            projection={self.room_name: True, '_id': False},
             upsert=True,
             return_document=ReturnDocument.AFTER)
         return sequence_num
@@ -203,7 +204,7 @@ class ChatRoom(deque):
             return message_container
 
 
-    def send_message(self, message: str, mess_props: MessageProperties) -> None:
+    def send_message(self, message: str, room_name: str, from_alias: str, to_alias: str) -> None:
         """Insert message into the message list for the room, and create a mongodb document for the message
 
         Args:
@@ -212,6 +213,7 @@ class ChatRoom(deque):
         Returns:
             bool: Return true if the message is successfully submitted to RMQ, false otherwise
         """
+        mess_props = MessageProperties(mess_type=MESSAGE_SENT, room_name=room_name, from_user=from_alias, to_user=to_alias, sequence_num=self.__get_next_sequence_num())
         new_message = ChatMessage(message=message, mess_props=mess_props)
         self.put(new_message)
 

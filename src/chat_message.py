@@ -27,7 +27,6 @@ class ChatMessage:
             mess_props = MessageProperties(MESSAGE_SENT, 'Auto generated properties', "Unknown", "Unknown")
     
         self.__message = message
-        self.__sequence_num = self.__get_next_sequence_num()
         self.__mess_props = mess_props
         self.__dirty = True
 
@@ -42,10 +41,6 @@ class ChatMessage:
     @property
     def dirty(self) -> bool:
         return self.__dirty
-
-    @property
-    def sequence_num(self) -> int:
-        return self.__sequence_num
 
     def to_dict(self) -> dict:
         """Custom to_dict method for ChatMessage objects. The custom approach is designed

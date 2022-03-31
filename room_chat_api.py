@@ -51,15 +51,10 @@ async def send_message(room_name: str, message: str, from_alias: str, to_alias: 
     """
     start_time = time.perf_counter()
     chat_room = ChatRoom(room_name=room_name)
-    mess_props = MessageProperties(MESSAGE_SENT, room_name, to_alias, from_alias)
-    if chat_room.send_message(message=message, mess_props=mess_props) is True:
-        elapsed_time = time.perf_counter() - start_time
-        log(f"POST /message/ {elapsed_time} result: Success")
-        return JSONResponse(status_code=201, content={'result': 'ENQUEUED'})
-    else:
-        elapsed_time = time.perf_counter() - start_time
-        log(f"POST /message/ {elapsed_time} result: Failure")
-        return JSONResponse(status_code=410, content="Problem sending message")
+    chat_room.send_message(message=message, room_name=room_name, from_alias=from_alias, to_alias=to_alias)
+    elapsed_time = time.perf_counter() - start_time
+    log(f"POST /message/ {elapsed_time} result: Success")
+    return JSONResponse(status_code=201, content='Enqeued message')
 
 
 @app.get('/messages/', status_code=201)
@@ -77,9 +72,10 @@ async def get_messages(request: Request, alias: str, room_name: str, messages_to
     log(f"Attempting to send messages to chat room {room_name} . . .")
     start_time = time.perf_counter()
     chat_room = ChatRoom(room_name=room_name)
+    messages = chat_room.get_messages()
     elapsed_time = time.perf_counter() - start_time
     log(f"GET /messages/ {elapsed_time} result: Success")
-
+    return JSONResponse(status_code=200, content=messages)
 
 """
 User routes
@@ -139,12 +135,3 @@ async def create_room(room_name: str, owner_alias: str, room_type: int = CHAT_RO
         elapsed_time = time.perf_counter() - start_time
         log(f"POST /room/{room_name}/{owner_alias}/{room_type} {elapsed_time} result: Room already exists")
         return JSONResponse(status_code=405, content="Room not created")
-
-def main():
-    ip_address = socket.gethostbyname(socket.gethostname())
-    user = input("Please enter your name: ")
-    log(f"[+] User {user} logged in at {ip_address}")
-
-
-if __name__ == '__main__':
-    main()
