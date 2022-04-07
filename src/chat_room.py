@@ -179,12 +179,13 @@ class ChatRoom(deque):
         self.__persist()
         return True
 
-    def get_messages(self, num_messages: int = GET_ALL_MESSAGES, return_objects: bool = True) -> list:
+    def get_messages(self, num_messages: int = GET_ALL_MESSAGES, return_objects: bool = False) -> list:
         """Retrieve the ChatRoom's messages from storage. Also retrieves new messages from RMQ. 
         Users have the option of returning the objects as ChatMessage objects, or just the message content
 
         Args:
-            num_messages (int, optional): Number of messages to retrieve from the message queue. Defaults to GET_ALL_MESSAGES
+            num_messages (int, optional): Number of messages to retrieve from the message queue. Defaults to 
+            GET_ALL_MESSAGES
             return_objects (bool, optional): Flag indicating if the method should return ChatMessage 
             objects, or strings. Defaults to True (ChatMessage objects).
 
@@ -200,7 +201,7 @@ class ChatRoom(deque):
             message_container = []
             for message_iterator in range(0, num_messages):
                 message = list(self)[message_iterator]
-                message_container.append(message.message)
+                message_container.append(message) if return_objects else message_container.append(message.message)
             return message_container
 
 
@@ -213,7 +214,12 @@ class ChatRoom(deque):
         Returns:
             bool: Return true if the message is successfully submitted to RMQ, false otherwise
         """
-        mess_props = MessageProperties(mess_type=MESSAGE_SENT, room_name=room_name, from_user=from_alias, to_user=to_alias, sequence_num=self.__get_next_sequence_num())
+        mess_props = MessageProperties(
+                                mess_type=MESSAGE_SENT, 
+                                room_name=room_name, 
+                                from_user=from_alias, 
+                                to_user=to_alias, 
+                                sequence_num=self.__get_next_sequence_num())
         new_message = ChatMessage(message=message, mess_props=mess_props)
         self.put(new_message)
 
@@ -244,10 +250,12 @@ class ChatRoom(deque):
 
     def put(self, message: ChatMessage = None) -> None:
         """Puts message into the dequeue. Overrides default put method to place ChatMessages
-        into the left end of the deque. We choose to read from the right
+        into the left end of the deque. We choose to read from the right. Method also saves the 
+        new messages into the db
 
         Args:
-            message (ChatMessage): _description_
+            message (ChatMessage): ChatMessage to send to place in the deque and to persist in 
+            the db
         """
         log(f"[*] Put message: {message}", 'd')
         if message is not None:
@@ -258,10 +266,10 @@ class ChatRoom(deque):
     def metadata(self) -> dict:
         """Custom method to return metadata. This method is used by ther room_list to store 
         metadata in its internal room list. Metadata is composed of the
-        * Room name
-        * Room type
-        * Owner alias
-        * Member_list
+            * Room name
+            * Room type
+            * Owner alias
+            * Member_list
 
         Returns:
             dict: Metadata for the specific object

@@ -6,7 +6,7 @@ __author__ = "Zac Foteff"
 import unittest
 import time
 from bin.logger import Logger
-from src.users import ChatUser
+from src.chat_user import ChatUser
 
 log = Logger("./chatUserTest")
 

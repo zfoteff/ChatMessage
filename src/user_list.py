@@ -7,10 +7,9 @@ from datetime import datetime
 from pymongo import MongoClient
 from bin.logger import Logger
 from bin.constants import *
-from src.users import ChatUser
+from src.chat_user import ChatUser
 
 log = Logger("userList")
-
 
 class UserList:
     """List of ChatUsers. Inherits from List class

@@ -5,7 +5,6 @@ __author__ = "Zac Foteff"
 
 import unittest
 import time
-from webbrowser import BackgroundBrowser
 from bin.logger import Logger
 from fastapi.testclient import TestClient
 from room_chat_api import app

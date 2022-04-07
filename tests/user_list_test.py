@@ -7,7 +7,7 @@ import unittest
 import time
 from bin.logger import Logger
 from bin.constants import *
-from src.users import ChatUser
+from chat_user import ChatUser
 from src.user_list import UserList
 
 log = Logger("./userListTest")
