@@ -1,4 +1,3 @@
-""" """
 __version__ = "1.0.0."
 __author__ = "Zac Foteff"
 
@@ -15,11 +14,11 @@ class ChatUser:
     def __init__(self,
                  alias: str,
                  user_id=None,
-                 blocked_users=[],
+                 blocked_users=None,
                  create_time: datetime = datetime.now(),
                  modify_time: datetime = datetime.now()) -> None:
-        """Initialize a new User object. Mark the user as dirty by default, unless the user was restored 
-        from the MongoDB collection
+        """Initialize a new User object. Mark the user as dirty by default, unless the user was restored from the
+        MongoDB collection
 
         Args:
             alias (str): Alias of the user
@@ -27,6 +26,8 @@ class ChatUser:
             create_time (datetime, optional): Create time for the object. Defaults to datetime.now().
             modify_time (datetime, optional): Last time the object was modified. Defaults to datetime.now().
         """
+        if blocked_users is None:
+            self.__blocked_users = list()
         self.__alias = alias
         self.__user_id = user_id
         self.__blocked_users = blocked_users
@@ -46,7 +47,7 @@ class ChatUser:
         return self.__user_id
 
     @property
-    def blocked_user(self) -> list:
+    def blocked_users(self) -> list:
         return self.__blocked_users
 
     @property
@@ -58,8 +59,8 @@ class ChatUser:
         self.__dirty = new_dirty
 
     def block_user(self, block_alias: str) -> None:
-        """Block a users messages from being recieved by this user. Adds
-        the alias to the user's internal list of blocked users
+        """Block a users messages from being received by this user. Adds the alias to the user's internal list of
+        blocked users
 
         Args:
             block_alias (str): User alias to block
@@ -70,7 +71,6 @@ class ChatUser:
 
         self.__blocked_users.append(block_alias)
         log(f"[+] Blocked user {block_alias}")
-        
 
     def is_blocked(self, alias: str) -> bool:
         """Checks if a user is in this user's list of blocked users
@@ -89,7 +89,8 @@ class ChatUser:
             dict: Dictionary representation of object
         """
         return {
-            "alias": self.alias,
+            "alias": self.__alias,
+            "blocked_users": self.__blocked_users,
             "create_time": self.__create_time,
             "modify_time": self.__modify_time
         }

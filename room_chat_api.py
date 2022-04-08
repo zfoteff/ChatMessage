@@ -68,7 +68,7 @@ async def get_messages(request: Request, alias: str, room_name: str, messages_to
     log(f"Attempting to send messages to chat room {room_name} . . .")
     start_time = time.perf_counter()
     chat_room = ChatRoom(room_name=room_name)
-    messages = chat_room.get_messages()
+    messages = chat_room.get_messages(alias)
     elapsed_time = time.perf_counter() - start_time
     log(f"GET /messages/ {elapsed_time} result: Success")
     return JSONResponse(status_code=200, content=messages)

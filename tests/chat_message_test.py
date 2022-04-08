@@ -1,4 +1,4 @@
-"""Test suite for unittesting the Chat Message Class"""
+"""Test suite for unit testing the Chat Message Class"""
 
 __version__ = "1.0.0"
 __author__ = "Zac Foteff"

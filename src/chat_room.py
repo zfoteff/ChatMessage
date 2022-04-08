@@ -48,14 +48,16 @@ class ChatRoom(deque):
         self.__mongo_client = MongoClient(DB_HOST, DB_PORT)
         self.__mongo_db = self.__mongo_client.cpsc313
         self.__mongo_collection = self.__mongo_db.get_collection(room_name)
+        self.__mongo_seq_collection = self.__mongo_db.get_collection('sequence')
+
         if self.__mongo_collection is None:
             #   Initialize the chat queue collection in the DB if it does not already exist
+            log(f"[-] No collection for chat room {self.__room_name} in the database. Creating . . .")
             self.__mongo_collection = self.__mongo_db.create_collection(room_name)
-            
-        self.__mongo_seq_collection = self.__mongo_db.get_collection('sequence')
+
         if self.__mongo_seq_collection is None:
             #   Initialize the sequence number collection in the DB if it does not already exist
-            log("[-] No sequence collection in the database. Creating")
+            log("[-] No sequence collection in the database. Creating . . .")
             self.__mongo_seq_collection = self.__mongo_db.create_collection('sequence')
 
         if self.__restore():
@@ -92,14 +94,14 @@ class ChatRoom(deque):
         and save a document for that user
         """
         if self.__mongo_collection.find_one({'room_name': {'$exists': 'false'}}) is None:
-            filter = {'room_name': self.room_name}
+            room_update_filter = {'room_name': self.room_name}
             new_values = {"$set": self.to_dict()}
-            self.__mongo_collection.update_one(filter, new_values, upsert=True)
+            self.__mongo_collection.update_one(room_update_filter, new_values, upsert=True)
 
         for message in list(self):
-            filter = {'message': message.message}
+            message_update_filter = {'message': message.message}
             new_values = {"$set": message.to_dict()}
-            self.__mongo_collection.update_one(filter, new_values, upsert=True)
+            self.__mongo_collection.update_one(message_update_filter, new_values, upsert=True)
 
     def __restore(self) -> bool:
         """Restore object data from MongoDB. Find record using the room name as a key and
@@ -179,18 +181,20 @@ class ChatRoom(deque):
         self.__persist()
         return True
 
-    def get_messages(self, num_messages: int = GET_ALL_MESSAGES, return_objects: bool = False) -> list:
-        """Retrieve the ChatRoom's messages from storage. Also retrieves new messages from RMQ. 
-        Users have the option of returning the objects as ChatMessage objects, or just the message content
+    def get_messages(self, alias: str, num_messages: int = GET_ALL_MESSAGES, return_objects: bool = False) -> list:
+        """Retrieve the ChatRoom's messages from storage. Also retrieves new messages from Mongo. 
+        Users have the option of returning the objects as ChatMessage objects, or just the message 
+        content. The method will also filter the messages to ensure that no users 
 
         Args:
-            num_messages (int, optional): Number of messages to retrieve from the message queue. Defaults to 
-            GET_ALL_MESSAGES
+            alias (str): Alias of the user requesting the messages
+            num_messages (int, optional): Number of messages to retrieve from the message queue. 
+            Defaults to GET_ALL_MESSAGES
             return_objects (bool, optional): Flag indicating if the method should return ChatMessage 
             objects, or strings. Defaults to True (ChatMessage objects).
-
         Returns:
-            list: List of messages associated with the ChatRoom object and the amount of strings retrieved
+            list: List of messages associated with the ChatRoom object and the amount of strings 
+            retrieved
         """
         log(f"[*] Requested retrieval of {GET_ALL_MESSAGES} from our queue of messages")
         log(f"[*] Number of messages in internal queue {self.length}")
@@ -204,24 +208,25 @@ class ChatRoom(deque):
                 message_container.append(message) if return_objects else message_container.append(message.message)
             return message_container
 
-
     def send_message(self, message: str, room_name: str, from_alias: str, to_alias: str) -> None:
-        """Insert message into the message list for the room, and create a mongodb document for the message.
-        The MessageProperties should be constructed and attached to the message before it is place in the 
-        deque + database
+        """Insert message into the message list for the room, and create a mongodb document 
+        for the message. The MessageProperties should be constructed and attached to the message 
+        before it is place in the deque + database
 
         Args:
             message (str): Message to send to the chat application
-            mess_props (MessageProperties): Properties of the message being sent
+            room_name (str): Room to send the message to
+            from_alias (str): Alias of the user who sent the message
+            to_alias (str): Alias of the user the message is intended for
         Returns:
             bool: Return true if the message is successfully sent, false otherwise
         """
         mess_props = MessageProperties(
-                                mess_type=MESSAGE_SENT, 
-                                room_name=room_name, 
-                                from_user=from_alias, 
-                                to_user=to_alias, 
-                                sequence_num=self.__get_next_sequence_num())
+            mess_type=MESSAGE_SENT,
+            room_name=room_name,
+            from_user=from_alias,
+            to_user=to_alias,
+            sequence_num=self.__get_next_sequence_num())
         new_message = ChatMessage(message=message, mess_props=mess_props)
         self.put(new_message)
 

@@ -11,13 +11,14 @@ from src.chat_user import ChatUser
 
 log = Logger("userList")
 
+
 class UserList:
     """List of ChatUsers. Inherits from List class
     """
 
     def __init__(self, list_name: str = DB_DEFAULT_USER_LIST) -> None:
         """Initialize a new UserList object.
-        NOTE: Depends on the ChatUser object as a dependancy
+        NOTE: Depends on the ChatUser object as a dependency
 
         Args:
             list_name (str, optional): ID of the user list. Defaults to DB_DEFAULT_USER_LIST.
@@ -59,15 +60,15 @@ class UserList:
         Second, for each user in the list create and save a document for that user
         """
         if self.__mongo_collection.find_one({'list_name': {'$exists': 'true'}}):
-            filter = {'list_name': self.list_name}
+            list_update_filter = {'list_name': self.list_name}
             new_values = {"$set": self.to_dict()}
-            self.__mongo_collection.update_one(filter, new_values, upsert=True)
+            self.__mongo_collection.update_one(list_update_filter, new_values, upsert=True)
             log("[+] Saved user list metadata to MongoDB")
 
         for user in self.user_list:
-            filter = {'alias': user.alias}
+            user_update_filter = {'alias': user.alias}
             new_values = {"$set": user.to_dict()}
-            self.__mongo_collection.update_one(filter, new_values, upsert=True)
+            self.__mongo_collection.update_one(user_update_filter, new_values, upsert=True)
         log("[+] Saved all users to user list collection")
 
     def __restore(self) -> bool:
@@ -121,6 +122,11 @@ class UserList:
         return None
 
     def get_all_users(self) -> list:
+        """Returns a list of all user alias's in the user list
+
+        Returns:
+            list: List of users in the user list
+        """
         return [user.alias for user in self.user_list]
 
     def to_dict(self) -> dict:

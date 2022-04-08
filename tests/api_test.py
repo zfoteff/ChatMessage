@@ -15,6 +15,7 @@ TEST_MESSAGE = "zac's test message"
 ROOM_TYPE = CHAT_ROOM_TYPE_PUBLIC
 log = Logger("./apiTest")
 
+
 class APITests(unittest.TestCase):
     def setUp(self) -> None:
         self.client = TestClient(app)
@@ -36,7 +37,7 @@ class APITests(unittest.TestCase):
         start_time = time.perf_counter()
         new_room_name = self.generate_random_string(5)
         room_route_query_string = f"?room_name={new_room_name}&owner_alias={OWNER_ALIAS}"
-        response = self.client.post("/room/"+room_route_query_string)
+        response = self.client.post("/room/" + room_route_query_string)
         self.assertEqual(response.status_code, 201)
         self.assertEqual(response.json(), "Successfully created new room")
         elapsed_time = time.perf_counter() - start_time
@@ -45,17 +46,16 @@ class APITests(unittest.TestCase):
     def test_send_message_route(self):
         start_time = time.perf_counter()
         send_message_query_string = f"?room_name={ROOM_NAME}&message={TEST_MESSAGE}&from_alias={FROM_ALIAS}&to_alias={TO_ALIAS}"
-        response = self.client.post("/message/"+send_message_query_string)
+        response = self.client.post("/message/" + send_message_query_string)
         self.assertEqual(response.status_code, 201)
         self.assertEqual(response.json(), "Enqueued message")
         elapsed_time = time.perf_counter() - start_time
         log(f"[+] Completed send message route test in {elapsed_time:.5f}")
 
-
     def test_get_messages_route(self):
         start_time = time.perf_counter()
         get_message_query_string = f"?alias={TO_ALIAS}&room_name={ROOM_NAME}"
-        response = self.client.get("/messages/"+get_message_query_string)
+        response = self.client.get("/messages/" + get_message_query_string)
         self.assertEqual(response.status_code, 200)
         self.assertIsInstance(response.json(), list)
         elapsed_time = time.perf_counter() - start_time
@@ -73,7 +73,7 @@ class APITests(unittest.TestCase):
         start_time = time.perf_counter()
         new_user = self.generate_random_string(5)
         register_user_query_string = f"?user_alias={new_user}"
-        response = self.client.post("/register/user/"+register_user_query_string)
+        response = self.client.post("/register/user/" + register_user_query_string)
         self.assertEqual(response.status_code, 201)
         self.assertEqual(response.json(), "Success")
         elapsed_time = time.perf_counter() - start_time
@@ -83,7 +83,7 @@ class APITests(unittest.TestCase):
         start_time = time.perf_counter()
         new_user = self.generate_random_string(5)
         register_query_string = f"?user_alias={new_user}"
-        register_response = self.client.post("/register/user/"+register_query_string)
+        register_response = self.client.post("/register/user/" + register_query_string)
         self.assertEqual(register_response.status_code, 201)
         get_response = self.client.get("/users/")
         self.assertEqual(get_response.status_code, 200)
@@ -94,9 +94,9 @@ class APITests(unittest.TestCase):
     def test_send_then_get(self):
         start_time = time.perf_counter()
         send_message_query_string = f"?room_name={ROOM_NAME}&message={TEST_MESSAGE}&from_alias={FROM_ALIAS}&to_alias={TO_ALIAS}"
-        send_response = self.client.post("/message/"+send_message_query_string)
+        send_response = self.client.post("/message/" + send_message_query_string)
         get_message_query_string = f"?alias={TO_ALIAS}&room_name={ROOM_NAME}"
-        get_response = self.client.get("/messages/"+get_message_query_string)
+        get_response = self.client.get("/messages/" + get_message_query_string)
         self.assertEqual(send_response.status_code, 201)
         self.assertEqual(get_response.status_code, 200)
         self.assertIn(TEST_MESSAGE, get_response.json())

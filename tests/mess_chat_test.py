@@ -12,6 +12,7 @@ from room_chat_api import app
 URL = 'http://localhost:8000/'
 log = Logger("./messageServerTest")
 
+
 class SuccessfulConnectionTestCases(unittest.TestCase):
     """Test suite for the message chat application API connection tests"""
 
@@ -27,6 +28,7 @@ class SuccessfulConnectionTestCases(unittest.TestCase):
         self.assertEqual(response.status_code, self.SUCCESS_CODE)
         elapsed_time = time.perf_counter() - start_time
         log(f"Completed GET root test in {elapsed_time}")
+
 
 class SendTestCases(unittest.TestCase):
     """Test suite for the send message API route"""
@@ -45,7 +47,7 @@ class SendTestCases(unittest.TestCase):
 
     def test_send_single_message(self) -> None:
         start_time = time.perf_counter()
-        response = self.client.post(self.SEND_ROUTE+self.QUERY_STRING)
+        response = self.client.post(self.SEND_ROUTE + self.QUERY_STRING)
         self.assertEqual(response.status_code, self.SEND_SUCCESS_CODE)
         self.assertEqual(response.json(), self.SEND_SUCCESS_MESSAGE)
         elapsed_time = time.perf_counter() - start_time
@@ -53,7 +55,7 @@ class SendTestCases(unittest.TestCase):
 
 
 class MessagesTestCases(unittest.TestCase):
-    """Test suite for the recieve messages API route"""
+    """Test suite for the receiving messages API route"""
 
     TEST_ROOM = "zfoteff_test"
     TEST_FROM_ALIAS = "t1"
@@ -70,6 +72,7 @@ class MessagesTestCases(unittest.TestCase):
 
         elapsed_time = time.perf_counter() - start_time
         log(f"Completed send message route test in {elapsed_time:.5f}")
+
 
 class RegisterUserTestCases(unittest.TestCase):
     """Test suite for registering a user to the application user list"""

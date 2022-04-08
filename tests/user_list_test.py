@@ -1,4 +1,4 @@
-"""Test suite for unittesting the UserList class"""
+"""Test suite for unit testing the UserList class"""
 
 __version__ = "1.0.0."
 __author__ = "Zac Foteff"
@@ -6,8 +6,7 @@ __author__ = "Zac Foteff"
 import unittest
 import time
 from bin.logger import Logger
-from bin.constants import *
-from chat_user import ChatUser
+from src.chat_user import ChatUser
 from src.user_list import UserList
 
 log = Logger("./userListTest")

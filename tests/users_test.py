@@ -1,4 +1,4 @@
-"""Test suite for unittesting the ChatUser class"""
+"""Test suite for unit testing the ChatUser class"""
 
 __version__ = "1.0.0."
 __author__ = "Zac Foteff"
@@ -22,11 +22,11 @@ class ChatUserTests(unittest.TestCase):
     def test_create_single_instance(self):
         start_time = time.perf_counter()
         chat_user = ChatUser(self.TEST_ALIAS)
-        log(chat_user)
+        log(str(chat_user))
         self.assertIsNotNone(chat_user)
         self.assertIsInstance(chat_user, ChatUser)
         self.assertEqual(chat_user.alias, self.TEST_ALIAS)
         elapsed_time = time.perf_counter() - start_time
-        log(chat_user, 'd')
-        log(chat_user.to_dict(), 'd')
+        log(str(chat_user), 'd')
+        log(str(chat_user.to_dict()), 'd')
         log(f"[+] Completed create single instance test in {elapsed_time:.5f}")
