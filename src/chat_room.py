@@ -206,13 +206,15 @@ class ChatRoom(deque):
 
 
     def send_message(self, message: str, room_name: str, from_alias: str, to_alias: str) -> None:
-        """Insert message into the message list for the room, and create a mongodb document for the message
+        """Insert message into the message list for the room, and create a mongodb document for the message.
+        The MessageProperties should be constructed and attached to the message before it is place in the 
+        deque + database
 
         Args:
             message (str): Message to send to the chat application
             mess_props (MessageProperties): Properties of the message being sent
         Returns:
-            bool: Return true if the message is successfully submitted to RMQ, false otherwise
+            bool: Return true if the message is successfully sent, false otherwise
         """
         mess_props = MessageProperties(
                                 mess_type=MESSAGE_SENT, 

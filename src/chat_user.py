@@ -15,6 +15,7 @@ class ChatUser:
     def __init__(self,
                  alias: str,
                  user_id=None,
+                 blocked_users=[],
                  create_time: datetime = datetime.now(),
                  modify_time: datetime = datetime.now()) -> None:
         """Initialize a new User object. Mark the user as dirty by default, unless the user was restored 
@@ -28,6 +29,7 @@ class ChatUser:
         """
         self.__alias = alias
         self.__user_id = user_id
+        self.__blocked_users = blocked_users
         self.__create_time = create_time
         self.__modify_time = modify_time
         if self.__user_id is not None:
@@ -44,12 +46,41 @@ class ChatUser:
         return self.__user_id
 
     @property
+    def blocked_user(self) -> list:
+        return self.__blocked_users
+
+    @property
     def dirty(self) -> bool:
         return self.__dirty
 
     @dirty.setter
     def dirty(self, new_dirty) -> None:
         self.__dirty = new_dirty
+
+    def block_user(self, block_alias: str) -> None:
+        """Block a users messages from being recieved by this user. Adds
+        the alias to the user's internal list of blocked users
+
+        Args:
+            block_alias (str): User alias to block
+        """
+        if self.is_blocked(block_alias):
+            log(f"[*] User {block_alias} is already blocked")
+            return
+
+        self.__blocked_users.append(block_alias)
+        log(f"[+] Blocked user {block_alias}")
+        
+
+    def is_blocked(self, alias: str) -> bool:
+        """Checks if a user is in this user's list of blocked users
+
+        Args:
+            alias (str): User alias to look for in the blocked list
+        Returns:
+            bool: true if alias is in the list, false otherwise
+        """
+        return alias in self.__alias
 
     def to_dict(self) -> dict:
         """Return a dictionary representation of the ChatUser object
