@@ -52,7 +52,7 @@ class UserList:
 
     @property
     def _mongo_client(self):
-        """Protected propety for testing"""
+        """Protected property for testing"""
         return self.__mongo_client
 
     def __persist(self) -> None:
@@ -69,6 +69,8 @@ class UserList:
             user_update_filter = {'alias': user.alias}
             new_values = {"$set": user.to_dict()}
             self.__mongo_collection.update_one(user_update_filter, new_values, upsert=True)
+            log(f"[+] Saved user {user} to database")
+
         log("[+] Saved all users to user list collection")
 
     def __restore(self) -> bool:
@@ -82,7 +84,10 @@ class UserList:
         self.__create_time = metadata['create_time']
         self.__modify_time = metadata['modify_time']
         for user_dict in self.__mongo_collection.find({'alias': {'$exists': 'true'}}):
-            self.__user_list.append(ChatUser(alias=user_dict['alias'], user_id=user_dict['_id']))
+            self.__user_list.append(ChatUser(
+                                        alias=user_dict['alias'],
+                                        blocked_users=user_dict['blocked_users'],
+                                        user_id=user_dict['_id']))
         log("[+] Restored all users to the user list")
         return True
 
