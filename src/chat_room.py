@@ -17,9 +17,8 @@ from bin.logger import Logger
 
 log = Logger("chatRoom")
 
-
 class ChatRoom(deque):
-
+    """ChatRoom class object. Inherits from dequeue to create an internal cache of ChatMessage objects"""
     def __init__(
             self,
             room_name: str,
@@ -71,6 +70,10 @@ class ChatRoom(deque):
     @property
     def room_name(self) -> str:
         return self.__room_name
+
+    @property
+    def member_list(self) -> UserList:
+        return self.__member_list
 
     @property
     def dirty(self) -> bool:
@@ -156,6 +159,7 @@ class ChatRoom(deque):
                 mess_data['mess_props']['rec_time'])
             new_message = ChatMessage(mess_data['message'], new_mess_props)
             self.put(new_message)
+        log(f"[+] Restored ChatRoom object {self.to_dict()}")
         return True
 
     def __get_next_sequence_num(self) -> int:
@@ -204,7 +208,7 @@ class ChatRoom(deque):
         """
         return self.member_list.get(alias)
 
-    def get_messages(self, alias: str, num_messages: int = GET_ALL_MESSAGES, return_objects: bool = False) -> list:
+    def get_messages(self, alias: str, num_messages: int=GET_ALL_MESSAGES, return_objects: bool=False) -> list:
         """Retrieve the ChatRoom's messages from storage. Also retrieves new messages from Mongo. 
         Users have the option of returning the objects as ChatMessage objects, or just the message 
         content. The method will also filter the messages to ensure that no blocked users' messages
@@ -228,22 +232,35 @@ class ChatRoom(deque):
         if num_messages == GET_ALL_MESSAGES or num_messages > self.length:
             for message in list(self):
                 if message.mess_props.from_user not in requesting_user.blocked_users:
+                    #   Message should only continue to be checked if the sender is not in the recievers blocker user list
+                    if message.mess_props.rec_time == None:
+                        #   If the message has not been recieved yet, acknowledge the message in the mess_type, rec_time, and the dirty flag
+                        message.mess_props.rec_time = datetime.now()
+                        message.mess_props.mess_type = MESSAGE_RECEIVED
+                        message.dirty = True
+
                     message_container.append(message) if return_objects else message_container.append(message.message)
 
         else:
             for message_iterator in range(0, num_messages):
                 message = list(self)[message_iterator]
                 if message.mess_props.from_user not in requesting_user.blocked_users:
+                    #   Message should only continue to be checked if the sender is not in the recievers blocker user list
+                    if message.mess_props.rec_time == None:
+                        #   If the message has not been recieved yet, acknowledge the message in the mess_type, rec_time, and the dirty flag
+                        message.mess_props.rec_time = datetime.now()
+                        message.mess_props.mess_type = MESSAGE_RECEIVED
+                        message.dirty = True
+
                     message_container.append(message) if return_objects else message_container.append(message.message)
 
         return message_container
 
-    def send_message(self, message: str, room_name: str, from_alias: str, to_alias: str) -> None:
+    def send_message(self, message: str, room_name: str, from_alias: str, to_alias: str) -> bool:
         """Insert message into the message list for the room, and create a mongodb document 
         for the message. The MessageProperties should be constructed and attached to the message 
-        before it is place in the deque + database
-
-        TODO: Check that from_alias and to_alias are registered to the member list
+        before it is place in the deque + database. The ChatRoom first is checked if the from and 
+        to alias's are in the registered user list (if the )
 
         Args:
             message (str): Message to send to the chat application
@@ -253,14 +270,18 @@ class ChatRoom(deque):
         Returns:
             bool: Return true if the message is successfully sent, false otherwise
         """
-        mess_props = MessageProperties(
-            mess_type=MESSAGE_SENT,
-            room_name=room_name,
-            from_user=from_alias,
-            to_user=to_alias,
-            sequence_num=self.__get_next_sequence_num())
-        new_message = ChatMessage(message=message, mess_props=mess_props)
-        self.put(new_message)
+        if self.room_type == CHAT_ROOM_TYPE_PRIVATE and from_alias in self.member_list.get_all_users() and to_alias in self.member_list.get_all_users():
+            mess_props = MessageProperties(
+                mess_type=MESSAGE_SENT,
+                room_name=room_name,
+                from_user=from_alias,
+                to_user=to_alias,
+                sequence_num=self.__get_next_sequence_num())
+            new_message = ChatMessage(message=message, mess_props=mess_props)
+            self.put(new_message)
+            return True
+
+        elif self.room_type == CHAT_ROOM_TYPE_PUBLIC
 
     def find_message(self, message_text: str) -> ChatMessage | None:
         """Find message object in the deque using the text of the message as a key

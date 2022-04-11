@@ -7,7 +7,8 @@ Chat Message Application during lab 3 of CPSC 313 at Gonzaga University, and exp
 * pika
 * requests
 * pytest
-* fastapi
+* pymongo
+* collections.dequeue
 * logging
 
 Quick install dependancies with
@@ -20,7 +21,7 @@ This uses the ChatMessageEnv virtual environment for development
 To Run
 
 ```bash
-ChatMessageEnv/Scripts/Activate.ps1
+ChatMessageEnv/Scripts/activate
 ```
 
 Docker Image for local testing

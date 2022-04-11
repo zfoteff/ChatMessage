@@ -11,7 +11,6 @@ from bin.constants import *
 
 log = Logger("userList")
 
-
 class UserList:
     """List of ChatUsers. Inherits from List class
     """
@@ -60,7 +59,7 @@ class UserList:
         """
         if self.__mongo_collection.find_one({'list_name': {'$exists': 'true'}}):
             list_update_filter = {'list_name': self.list_name}
-            new_values = {"$set": self.to_dict()}
+            new_values = {"$set": self.metadata()}
             self.__mongo_collection.update_one(list_update_filter, new_values, upsert=True)
             log("[+] Saved user list metadata to MongoDB")
 
@@ -77,9 +76,10 @@ class UserList:
         """
         metadata = self.__mongo_collection.find_one({'list_name': {'$exists': 'true'}})
         if metadata is None:
-            log("[*] No metadata found for ChatRoom object", 'e')
+            log("[*] No metadata found for UserList object. Creating new collection .", 'e')
             self.__persist()
             return False
+            
         self.__list_name = metadata['list_name']
         self.__create_time = metadata['create_time']
         self.__modify_time = metadata['modify_time']
@@ -88,7 +88,7 @@ class UserList:
                                         alias=user_dict['alias'],
                                         blocked_users=user_dict['blocked_users'],
                                         user_id=user_dict['_id']))
-        log("[+] Restored all users to the user list")
+        log(f"[+] Restored user list {self.to_dict()}")
         return True
 
     def register(self, new_alias: str) -> bool:
@@ -148,9 +148,17 @@ class UserList:
         """
         return [user.alias for user in self.user_list]
 
+    def metadata(self) -> dict:
+        return {
+            "list_name": self.list_name,
+            "create_time": f"{self.__create_time}",
+            "modify_time": f"{self.__modify_time}"
+        }
+
     def to_dict(self) -> dict:
         return {
             "list_name": self.list_name,
+            "member_list": [user.to_dict() for user in self.user_list],
             "create_time": f"{self.__create_time}",
             "modify_time": f"{self.__modify_time}"
         }
