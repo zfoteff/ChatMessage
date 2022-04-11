@@ -43,7 +43,7 @@ class ChatRoomTests(unittest.TestCase):
         new_user = self.generate_random_string(5)
         room = ChatRoom(room_name=ROOM_NAME, room_type=ROOM_TYPE, owner_alias=OWNER_ALIAS)
         room.add_group_member(alias=new_user)
-        self.assertIn(new_user, room.member_list)
+        self.assertIn(new_user, room.member_list.get_all_users())
         elapsed_time = time.perf_counter() - start_time
         log(f"[+] Completed add group member test in {elapsed_time:.5f}")
 
@@ -75,7 +75,7 @@ class MessageTests(unittest.TestCase):
         return ''.join(random.choice(letters) for i in range(length))
 
     def test_send_single_message(self):
-        """"""
+        """Test that the application behaves correctly when sending a single message"""
         start_time = time.perf_counter()
         room = ChatRoom(room_name=ROOM_NAME, room_type=ROOM_TYPE, owner_alias=OWNER_ALIAS)
         room.send_message(TEST_MESSAGE, ROOM_NAME, FROM_ALIAS, TO_ALIAS)

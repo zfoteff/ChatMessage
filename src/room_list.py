@@ -12,7 +12,7 @@ from bin.constants import *
 from bin.logger import Logger
 from src.chat_room import ChatRoom
 
-log = Logger()
+log = Logger("./roomList")
 
 
 class RoomList:
@@ -36,7 +36,8 @@ class RoomList:
         self.__modify_time = datetime.now()
 
         #   Initialize MongoDB resources
-        self.__mongo_client = MongoClient(DB_HOST, DB_PORT)
+        # PROD ONLY: self.__mongo_client = MongoClient(PROD_DB_HOST, PROD_DB_PORT)
+        self.__mongo_client = MongoClient(TEST_DB_HOST)
         self.__mongo_db = self.__mongo_client.cpsc313
         self.__mongo_collection = self.__mongo_db.get_collection(list_name)
         if self.__mongo_collection is None:

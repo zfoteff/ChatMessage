@@ -1,15 +1,22 @@
 """Constants file for Chat application"""
+import os
+from dotenv import load_dotenv, find_dotenv
+
+load_dotenv(find_dotenv())
 
 __author__ = "Zac Foteff"
 __version__ = "1.0.0."
 
 #   MongoDB Constants
-DB_HOST = '34.94.157.136'
-DB_PORT = 27017
+TEST_DB_USERNAME = os.environ.get("DB_USERNAME")
+TEST_DB_PASSWORD = os.environ.get("DB_PASSWORD")
+TEST_DB_HOST = f"mongodb+srv://{TEST_DB_USERNAME}:{TEST_DB_PASSWORD}@cluster0.yjy1g.mongodb.net/"
+PROD_DB_HOST = '34.94.157.136'
+PROD_DB_PORT = 27017
+PROD_DB_AUTH_SOURCE = "cpsc313"
+PROD_DB_PASS = "CPSC313"
+PROD_DB_NAME = "cpsc313"
 DB_USER = "class"
-DB_PASS = "CPSC313"
-DB_AUTH_SOURCE = "cpsc313"
-DB_NAME = "cpsc313"
 DB_ROOM_LIST_COLLECTION = 'rooms'
 DB_USER_LIST_COLLECTION = 'users'
 DB_DEFAULT_ROOM_LIST = 'main'

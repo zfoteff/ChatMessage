@@ -1,13 +1,13 @@
 """UserList class object"""
 
-__version__ = "1.0.0."
+__version__ = "2.0.0."
 __author__ = "Zac Foteff"
 
 from datetime import datetime
 from pymongo import MongoClient
+from src.chat_user import ChatUser
 from bin.logger import Logger
 from bin.constants import *
-from src.chat_user import ChatUser
 
 log = Logger("userList")
 
@@ -26,7 +26,8 @@ class UserList:
         self.__list_name = list_name
         self.__user_list = list()
         self.__dirty = True
-        self.__mongo_client = MongoClient(DB_HOST, DB_PORT)
+        # PROD ONLY: self.__mongo_client = MongoClient(PROD_DB_HOST, PROD_DB_PORT)
+        self.__mongo_client = MongoClient(TEST_DB_HOST)
         self.__mongo_db = self.__mongo_client.cpsc313
         self.__mongo_collection = self.__mongo_db.users
         self.__create_time = datetime.now()
@@ -35,8 +36,6 @@ class UserList:
         if self.__restore():
             log(f"[*] Successfully restored user list from MongoDB collection")
             self.__dirty = False
-        else:
-            log("[*] Cannot find user list in MongoDB. Creating new object . . .", 'w')
 
     @property
     def list_name(self) -> str:
@@ -79,6 +78,7 @@ class UserList:
         metadata = self.__mongo_collection.find_one({'list_name': {'$exists': 'true'}})
         if metadata is None:
             log("[*] No metadata found for ChatRoom object", 'e')
+            self.__persist()
             return False
         self.__list_name = metadata['list_name']
         self.__create_time = metadata['create_time']
@@ -91,7 +91,7 @@ class UserList:
         log("[+] Restored all users to the user list")
         return True
 
-    def register(self, new_alias: str) -> None:
+    def register(self, new_alias: str) -> bool:
         """Register new user to the user list. The method first checks if the new alias exists in the Database. If the 
         alias does not exist, a new user is created with that alias, and the method returns true. If the alias does 
         already exist, the method returns false and logs the reason to the log file 
@@ -101,15 +101,29 @@ class UserList:
         Returns:
             bool: Returns true if the user is created in the database, false if the user already exists
         """
-        if self.get(new_alias) is not None:
+        if self.is_registered(new_alias):
             log(f"[*] User {new_alias} already exists in the list of registered users. Cancelling operation . . .", 'e')
-            return
+            return False
 
         new_user = ChatUser(new_alias)
         self.__user_list.append(new_user)
         self.__modify_time = datetime.now()
         self.__persist()
         log(f"[+] {new_user} registered to user list {self.list_name}")
+        return True
+
+    def is_registered(self, alias: str) -> bool:
+        """Check if a user alias exists in the user list
+
+        Args:
+            alias (str): Alias to check for in the user list
+        Returns:
+            bool: Return true if the user exists, false otherwise
+        """
+        for user in self.__user_list:
+            if user.alias == alias: 
+                return True
+        return False
 
     def get(self, target_alias: str) -> ChatUser | None:
         """Find a user using their alias in the UserList. Should 
