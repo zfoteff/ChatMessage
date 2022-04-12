@@ -50,13 +50,19 @@ class ChatRoom(deque):
         # PROD ONLY: self.__mongo_client = MongoClient(PROD_DB_HOST, PROD_DB_PORT)
         self.__mongo_client = MongoClient(TEST_DB_HOST)
         self.__mongo_db = self.__mongo_client.cpsc313
-        self.__mongo_collection = self.__mongo_db.get_collection(room_name)
+        self.__mongo_room_collection = self.__mongo_db.get_collection(room_name)
+        self.__mongo_userlist_collection = self.__mongo_db.users
         self.__mongo_seq_collection = self.__mongo_db.get_collection('sequence')
 
-        if self.__mongo_collection is None:
+        if self.__mongo_room_collection is None:
             #   Initialize the chat queue collection in the DB if it does not already exist
             log(f"[-] No collection for chat room {self.__room_name} in the database. Creating . . .")
-            self.__mongo_collection = self.__mongo_db.create_collection(room_name)
+            self.__mongo_room_collection = self.__mongo_db.create_collection(room_name)
+
+        if self.__mongo_userlist_collection is None:
+            #   Initialize the user list collection in the DB if it does not already exist
+            log(f"[-] No collection for user list {self.member_list.list_name}. Creating . . .")
+            self.__mongo_userlist_collection = self.__mongo_db_create_collection()
 
         if self.__mongo_seq_collection is None:
             #   Initialize the sequence number collection in the DB if it does not already exist
@@ -116,15 +122,15 @@ class ChatRoom(deque):
         or there are changes that need to be persisted. Next, for each message in the list create
         and save a document for that user
         """
-        if self.__mongo_collection.find_one({'room_name': {'$exists': 'false'}}) is None:
+        if self.__mongo_room_collection.find_one({'room_name': {'$exists': 'false'}}) is None:
             room_update_filter = {'room_name': self.room_name}
             new_values = {"$set": self.to_dict()}
-            self.__mongo_collection.update_one(room_update_filter, new_values, upsert=True)
+            self.__mongo_room_collection.update_one(room_update_filter, new_values, upsert=True)
 
         for message in list(self):
             message_update_filter = {'message': message.message}
             new_values = {"$set": message.to_dict()}
-            self.__mongo_collection.update_one(message_update_filter, new_values, upsert=True)
+            self.__mongo_room_collection.update_one(message_update_filter, new_values, upsert=True)
 
     def __restore(self) -> bool:
         """Restore object data from MongoDB. Find record using the room name as a key and
@@ -138,7 +144,7 @@ class ChatRoom(deque):
             bool: Returns True if the object and its messages were restored successfully. 
             False otherwise
         """
-        metadata = self.__mongo_collection.find_one({'room_name': {'$exists': 'true'}})
+        metadata = self.__mongo_room_collection.find_one({'room_name': {'$exists': 'true'}})
         if metadata is None:
             log("[*] No metadata found for ChatRoom object. Creating new collection . . .", 'w')
             self.__persist()
@@ -148,7 +154,7 @@ class ChatRoom(deque):
         self.__room_type = metadata['room_type']
         self.__create_time = metadata['create_time']
         self.__modify_time = metadata['modify_time']
-        for mess_data in self.__mongo_collection.find({'message': {'$exists': 'true'}}):
+        for mess_data in self.__mongo_room_collection.find({'message': {'$exists': 'true'}}):
             new_mess_props = MessageProperties(
                 mess_data['mess_props']['mess_type'],
                 mess_data['mess_props']['room_name'],
@@ -256,15 +262,15 @@ class ChatRoom(deque):
 
         return message_container
 
-    def send_message(self, message: str, room_name: str, from_alias: str, to_alias: str) -> bool:
+    def send_message(self, message: str, from_alias: str, to_alias: str) -> bool:
         """Insert message into the message list for the room, and create a mongodb document 
         for the message. The MessageProperties should be constructed and attached to the message 
         before it is place in the deque + database. The ChatRoom first is checked if the from and 
-        to alias's are in the registered user list (if the )
+        to alias's are in the registered user list (if the chatroom is private). If the chatroom is 
+        public, users are automatically registered as users of the chatroom
 
         Args:
             message (str): Message to send to the chat application
-            room_name (str): Room to send the message to
             from_alias (str): Alias of the user who sent the message
             to_alias (str): Alias of the user the message is intended for
         Returns:
@@ -273,7 +279,7 @@ class ChatRoom(deque):
         if self.room_type == CHAT_ROOM_TYPE_PRIVATE and from_alias in self.member_list.get_all_users() and to_alias in self.member_list.get_all_users():
             mess_props = MessageProperties(
                 mess_type=MESSAGE_SENT,
-                room_name=room_name,
+                room_name=self.__room_name,
                 from_user=from_alias,
                 to_user=to_alias,
                 sequence_num=self.__get_next_sequence_num())
@@ -281,7 +287,22 @@ class ChatRoom(deque):
             self.put(new_message)
             return True
 
-        elif self.room_type == CHAT_ROOM_TYPE_PUBLIC
+        elif self.room_type == CHAT_ROOM_TYPE_PUBLIC:
+            mess_props = MessageProperties(
+                mess_type=MESSAGE_SENT,
+                room_name=self.__room_name,
+                from_user=from_alias,
+                to_user=to_alias,
+                sequence_num=self.__get_next_sequence_num())
+            new_message = ChatMessage(message=message, mess_props=mess_props)
+            if self.get_group_member(alias=from_alias) == None: self.add_group_member(from_alias)
+            if self.get_group_member(alias=to_alias) == None: self.add_group_member(to_alias)
+            self.put(new_message)
+            return True
+            
+        else:
+            log(f"[-] Cannot send message. One of the alias's is not registered for this ChatRoom", 'e')
+            return False
 
     def find_message(self, message_text: str) -> ChatMessage | None:
         """Find message object in the deque using the text of the message as a key

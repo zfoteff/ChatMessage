@@ -58,14 +58,14 @@ class ChatRoomTests(unittest.TestCase):
         new_user = self.generate_random_string(4)
         room = ChatRoom(room_name=ROOM_NAME, room_type=PUBLIC_ROOM_TYPE, owner_alias=OWNER_ALIAS)
         room.add_group_member(alias=new_user)
-        self.assertTrue(room.member_list.is_registered(new_user))
+        self.assertTrue(room.get_group_member(new_user))
         elapsed_time = time.perf_counter() - start_time
         log(f"[+] Completed is registered test in {elapsed_time:.5f} seconds")
 
     def test_restore_chatroom(self):
         """Test that ChatRoom instances can be successfully restored from MongoDB"""
-        start_time = time.perf_counter()
         RAND_ROOM_NAME = self.generate_random_string(10)
+        start_time = time.perf_counter()
         room = ChatRoom(room_name=RAND_ROOM_NAME, room_type=PUBLIC_ROOM_TYPE, owner_alias=OWNER_ALIAS)
         original_room_metadata = room.metadata()
         room = None
@@ -79,13 +79,33 @@ class ChatRoomTests(unittest.TestCase):
 
     def test_restore_messages(self):
         """Test that all messages in the ChatRoom obj are successfully restored from MongoDB"""
+        messages_to_send = [
+            "restored message 1",
+            "restored message 2",
+            "restored message 3",
+            "restored message 4",
+            "restored message 5",
+        ]
+        RAND_ROOM_NAME = self.generate_random_string(10)
         start_time = time.perf_counter()
-        
+        room = ChatRoom(room_name=RAND_ROOM_NAME, room_type=PUBLIC_ROOM_TYPE, owner_alias=OWNER_ALIAS)
+        room_metadata = room.metadata()
+        for message in messages_to_send:
+            room.send_message(message, TO_ALIAS, FROM_ALIAS)
+        room_messages = room.get_messages(TO_ALIAS)
+        room = None
+        new_room = ChatRoom(room_name=RAND_ROOM_NAME, room_type=PUBLIC_ROOM_TYPE, owner_alias=OWNER_ALIAS)
+        new_room_messages = new_room.get_messages(TO_ALIAS)
+        self.assertIsNone(room)
+        self.assertIsNotNone(new_room)
+        self.assertEqual(room_messages, new_room_messages)
+        for message in new_room.get_messages(TO_ALIAS):
+            self.assertIn(message, messages_to_send)
         elapsed_time = time.perf_counter() - start_time
         log(f"[+] Completed restore ChatRoom messages test in {elapsed_time:.5f} seconds")
 
     def test_restore_userlist(self):
-        """Test that ChatRoom instances can be successfully restored from the database"""
+        """Test that the UserList obj contained in the ChatRoom obj is successfully restored from MongoDB"""
         start_time = time.perf_counter()
 
         elapsed_time = time.perf_counter() - start_time
@@ -115,7 +135,7 @@ class MessageTests(unittest.TestCase):
         room = ChatRoom(room_name=ROOM_NAME, room_type=PUBLIC_ROOM_TYPE, owner_alias=OWNER_ALIAS)
         room.add_group_member(TO_ALIAS)
         room.add_group_member(FROM_ALIAS)
-        room.send_message(message=TEST_MESSAGE, room_name=ROOM_NAME, from_alias=FROM_ALIAS, to_alias=TO_ALIAS)
+        room.send_message(message=TEST_MESSAGE, from_alias=FROM_ALIAS, to_alias=TO_ALIAS)
         self.assertIn(TO_ALIAS, room.member_list.get_all_users())
         self.assertIn(FROM_ALIAS, room.member_list.get_all_users())
         self.assertIsNotNone(room.find_message(message_text=TEST_MESSAGE))
@@ -161,7 +181,7 @@ WARNING: LONG
         for counter in range(100):
             message = self.generate_random_string(5)
             message_list.append(message)
-            room.send_message(message, ROOM_NAME, FROM_ALIAS, TO_ALIAS)
+            room.send_message(message, FROM_ALIAS, TO_ALIAS)
         
         retreived_messages = room.get_messages(num_messages=100)
         for message in message_list:

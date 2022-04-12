@@ -55,6 +55,10 @@ class MessageProperties:
     def mess_type(self) -> int:
         return self.__mess_type
 
+    @mess_type.setter
+    def mess_type(self, new_mess_type) -> None:
+        self.__mess_type = new_mess_type
+
     @property
     def from_user(self) -> str:
         return self.__from_user
@@ -74,6 +78,10 @@ class MessageProperties:
     @property
     def rec_time(self) -> datetime:
         return self.__rec_time
+
+    @rec_time.setter
+    def rec_time(self, new_rec_time) -> None:
+        self.__rec_time = new_rec_time
 
     def to_dict(self) -> dict:
         """Custom to_dict method for message property objects. The custom approach is designed

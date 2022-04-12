@@ -42,6 +42,10 @@ class ChatMessage:
     def dirty(self) -> bool:
         return self.__dirty
 
+    @dirty.setter
+    def dirty(self, new_dirty) -> None:
+        self.__dirty = new_dirty
+
     def to_dict(self) -> dict:
         """Custom to_dict method for ChatMessage objects. The custom approach is designed
         to help make interactions with the MongoDB easier
