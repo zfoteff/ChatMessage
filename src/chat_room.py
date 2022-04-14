@@ -50,8 +50,7 @@ class ChatRoom(deque):
         # PROD ONLY: self.__mongo_client = MongoClient(PROD_DB_HOST, PROD_DB_PORT)
         self.__mongo_client = MongoClient(TEST_DB_HOST)
         self.__mongo_db = self.__mongo_client.cpsc313
-        self.__mongo_room_collection = self.__mongo_db.get_collection(room_name)
-        self.__mongo_userlist_collection = self.__mongo_db.users
+        self.__mongo_room_collection = self.__mongo_db.get_collection("rooms")
         self.__mongo_seq_collection = self.__mongo_db.get_collection('sequence')
 
         if self.__mongo_room_collection is None:
@@ -59,17 +58,12 @@ class ChatRoom(deque):
             log(f"[-] No collection for chat room {self.__room_name} in the database. Creating . . .")
             self.__mongo_room_collection = self.__mongo_db.create_collection(room_name)
 
-        if self.__mongo_userlist_collection is None:
-            #   Initialize the user list collection in the DB if it does not already exist
-            log(f"[-] No collection for user list {self.member_list.list_name}. Creating . . .")
-            self.__mongo_userlist_collection = self.__mongo_db_create_collection()
-
         if self.__mongo_seq_collection is None:
             #   Initialize the sequence number collection in the DB if it does not already exist
             log("[-] No sequence collection in the database. Creating . . .")
             self.__mongo_seq_collection = self.__mongo_db.create_collection('sequence')
 
-        if self.__restore():
+        if self.restore():
             #   Element is restored from storage, so indicate there are no changes to be saved
             self.__dirty = False
 
@@ -96,6 +90,7 @@ class ChatRoom(deque):
     @removed.setter
     def removed(self, new_removed) -> None:
         self.__removed = new_removed
+        self.__dirty = True
 
     @property
     def room_type(self) -> int:
@@ -108,6 +103,7 @@ class ChatRoom(deque):
     @owner_alias.setter
     def owner_alias(self, new_owner_alias) -> None:
         self.__owner_alias = new_owner_alias
+        self.__dirty = True
 
     @property
     def member_list(self) -> UserList:
@@ -117,11 +113,12 @@ class ChatRoom(deque):
     def length(self) -> int:
         return len(self)
 
-    def __persist(self) -> None:
+    def persist(self) -> None:
         """Persist object data in MongoDB. First, save the user list if it isn't already there
         or there are changes that need to be persisted. Next, for each message in the list create
         and save a document for that user
         """
+
         if self.__mongo_room_collection.find_one({'room_name': {'$exists': 'false'}}) is None:
             room_update_filter = {'room_name': self.room_name}
             new_values = {"$set": self.to_dict()}
@@ -132,7 +129,7 @@ class ChatRoom(deque):
             new_values = {"$set": message.to_dict()}
             self.__mongo_room_collection.update_one(message_update_filter, new_values, upsert=True)
 
-    def __restore(self) -> bool:
+    def restore(self) -> bool:
         """Restore object data from MongoDB. Find record using the room name as a key and
         populate name, create, and modify time.
         Next, retrieve that messages associated with the chat room (every document with 
@@ -147,7 +144,7 @@ class ChatRoom(deque):
         metadata = self.__mongo_room_collection.find_one({'room_name': {'$exists': 'true'}})
         if metadata is None:
             log("[*] No metadata found for ChatRoom object. Creating new collection . . .", 'w')
-            self.__persist()
+            self.persist()
             return False
 
         self.__room_name = metadata['room_name']
@@ -187,7 +184,7 @@ class ChatRoom(deque):
 
         return sequence_num
 
-    def add_group_member(self, alias: str) -> bool:
+    def register_group_member(self, alias: str) -> bool:
         """Register new user to the room's list of Users. Takes an alias and returns True if
         the user isn't registered to the room, and they were successfully added. Will return False
         if the user was already registered in the room, or an error prevents them from being added
@@ -199,13 +196,27 @@ class ChatRoom(deque):
         """
         if self.member_list.register(alias):
             self.__modify_time = datetime.now()
-            self.__persist()
+            self.persist()
+            return True
+        return False
+
+    def deregister_group_member(self, alias: str) -> bool:
+        """Deregister user from the UserList. Calls UserList helper method and returns the result of the 
+        deregister operation
+        
+        Args:
+            alias (str): Alias of the user to deregister from the userlist
+        Returns:
+            bool: Returns true if operation is completed successfully, false otherwise
+        """
+        if self.member_list.deregister(alias):
+            self.__modify_time = datetime.now()
+            self.persist()
             return True
         return False
 
     def get_group_member(self, alias: str) -> ChatUser | None:
-        """Get a user that exists in the ChatRoom. Returns the chat user if the alias matches, otherwise the method
-        returns None
+        """Get a user that exists in the ChatRoom. Calls the UserList get operation to retrieve a chat user using their alias
 
         Args:
             alias (str): Alias to search the member list for 
@@ -230,7 +241,6 @@ class ChatRoom(deque):
             list: List of messages associated with the ChatRoom object and the amount of strings 
             retrieved
         """
-
         requesting_user = self.get_group_member(alias)
         message_container = list()
         log(f"[*] Requested {GET_ALL_MESSAGES} messages. Requesting user: {requesting_user}. Number of messages in internal queue: {self.length}")
@@ -295,8 +305,8 @@ class ChatRoom(deque):
                 to_user=to_alias,
                 sequence_num=self.__get_next_sequence_num())
             new_message = ChatMessage(message=message, mess_props=mess_props)
-            if self.get_group_member(alias=from_alias) == None: self.add_group_member(from_alias)
-            if self.get_group_member(alias=to_alias) == None: self.add_group_member(to_alias)
+            if self.get_group_member(alias=from_alias) == None: self.register_group_member(from_alias)
+            if self.get_group_member(alias=to_alias) == None: self.register_group_member(to_alias)
             self.put(new_message)
             return True
             
@@ -342,7 +352,7 @@ class ChatRoom(deque):
         log(f"[*] Put message: {message}", 'd')
         super().appendleft(message)
         self.__modify_time = datetime.now()
-        self.__persist()
+        self.persist()
 
     def metadata(self) -> dict:
         """Custom method to return metadata. This method is used by ther room_list to store 

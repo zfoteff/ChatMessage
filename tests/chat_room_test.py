@@ -7,7 +7,6 @@ import unittest
 import time
 import string
 import random
-
 from bin.logger import Logger
 from bin.constants import *
 from src.chat_message import ChatMessage
@@ -46,7 +45,7 @@ class ChatRoomTests(unittest.TestCase):
         start_time = time.perf_counter()
         new_user = self.generate_random_string(5)
         room = ChatRoom(room_name=ROOM_NAME, room_type=PUBLIC_ROOM_TYPE, owner_alias=OWNER_ALIAS)
-        register_result = room.add_group_member(alias=new_user)
+        register_result = room.register_group_member(alias=new_user)
         self.assertTrue(register_result)
         self.assertIn(new_user, room.member_list.get_all_users())
         elapsed_time = time.perf_counter() - start_time
@@ -57,7 +56,7 @@ class ChatRoomTests(unittest.TestCase):
         start_time = time.perf_counter()
         new_user = self.generate_random_string(4)
         room = ChatRoom(room_name=ROOM_NAME, room_type=PUBLIC_ROOM_TYPE, owner_alias=OWNER_ALIAS)
-        room.add_group_member(alias=new_user)
+        room.register_group_member(alias=new_user)
         self.assertTrue(room.get_group_member(new_user))
         elapsed_time = time.perf_counter() - start_time
         log(f"[+] Completed is registered test in {elapsed_time:.5f} seconds")
@@ -133,8 +132,8 @@ class MessageTests(unittest.TestCase):
         start_time = time.perf_counter()
         TEST_MESSAGE = "send single message test"
         room = ChatRoom(room_name=ROOM_NAME, room_type=PUBLIC_ROOM_TYPE, owner_alias=OWNER_ALIAS)
-        room.add_group_member(TO_ALIAS)
-        room.add_group_member(FROM_ALIAS)
+        room.register_group_member(TO_ALIAS)
+        room.register_group_member(FROM_ALIAS)
         room.send_message(message=TEST_MESSAGE, from_alias=FROM_ALIAS, to_alias=TO_ALIAS)
         self.assertIn(TO_ALIAS, room.member_list.get_all_users())
         self.assertIn(FROM_ALIAS, room.member_list.get_all_users())

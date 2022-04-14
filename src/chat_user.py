@@ -1,7 +1,6 @@
 __version__ = "1.0.0."
 __author__ = "Zac Foteff"
 
-from os import remove
 from bin.logger import Logger
 from datetime import datetime
 
@@ -16,7 +15,7 @@ class ChatUser:
     def __init__(self,
                  alias: str,
                  user_id=None,
-                 blocked_users=None,
+                 blocked_users=list(),
                  create_time: datetime = datetime.now(),
                  modify_time: datetime = datetime.now()) -> None:
         """Initialize a new User object. Mark the user as dirty by default, unless the user was restored from the
@@ -29,10 +28,10 @@ class ChatUser:
             create_time (datetime, optional): Create time for the object. Defaults to datetime.now().
             modify_time (datetime, optional): Last time the object was modified. Defaults to datetime.now().
         """
-        if blocked_users is None:
-            self.__blocked_users = []
+        
         self.__alias = alias
         self.__user_id = user_id
+        self.__blocked_users = blocked_users
         self.__removed = False
         self.__create_time = create_time
         self.__modify_time = modify_time
@@ -48,6 +47,10 @@ class ChatUser:
     @property
     def user_id(self) -> str:
         return self.__user_id
+
+    @user_id.setter
+    def user_id(self, new_user_id) -> str:
+        self.__user_id = new_user_id
 
     @property
     def blocked_users(self) -> list:
@@ -92,6 +95,14 @@ class ChatUser:
             bool: true if alias is in the list, false otherwise
         """
         return alias in self.__alias
+
+    def metadata(self) -> dict:
+        return {
+            'alias': self.__alias,
+            'blacklist': self.__blocked_users,
+            "create_time": self.__create_time,
+            "modify_time": self.__modify_time
+        }
 
     def to_dict(self) -> dict:
         """Return a dictionary representation of the ChatUser object
